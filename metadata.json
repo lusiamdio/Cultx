@@ -1,0 +1,6 @@
+{
+  "name": "CULTx",
+  "description": "Pan-African Agricultural Intelligence and Commerce Infrastructure connecting farmers, markets, finance, logistics, and governments with AI and real-time data.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

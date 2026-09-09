@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+/* Remove all border lines throughout the platform */
+*,
+*::before,
+*::after {
+  border-width: 0 !important;
+  border-color: transparent !important;
+  border-style: none !important;
+}
+
+hr {
+  border: none !important;
+  height: 0 !important;
+}
+
+/* Professional Motion Graphics & Telemetry Keyframes */
+@keyframes radar-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes radar-pulse {
+  0% {
+    r: 6px;
+    opacity: 0.9;
+  }
+  50% {
+    r: 18px;
+    opacity: 0.4;
+  }
+  100% {
+    r: 28px;
+    opacity: 0;
+  }
+}
+
+@keyframes corridor-flow {
+  to {
+    stroke-dashoffset: -32;
+  }
+}
+
+@keyframes live-ticker {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes telemetry-scan {
+  0% {
+    top: 0%;
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.8;
+  }
+  85% {
+    opacity: 0.8;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+@keyframes packet-pulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+.animate-radar-sweep {
+  animation: radar-spin 6s linear infinite;
+  transform-origin: center center;
+}
+
+.animate-corridor-flow {
+  animation: corridor-flow 2s linear infinite;
+}
+
+.animate-live-ticker {
+  display: flex;
+  width: max-content;
+  animation: live-ticker 32s linear infinite;
+}
+
+.animate-live-ticker:hover {
+  animation-play-state: paused;
+}
+
+.animate-telemetry-scan {
+  animation: telemetry-scan 3.5s ease-in-out infinite;
+}
+
+.animate-packet-pulse {
+  animation: packet-pulse 2s ease-in-out infinite;
+}
