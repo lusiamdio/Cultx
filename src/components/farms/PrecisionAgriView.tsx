@@ -22,11 +22,12 @@ import {
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { SoilSensorDashboard } from "./SoilSensorDashboard";
+import { SmartIrrigationControl } from "./SmartIrrigationControl";
 
 export const PrecisionAgriView: React.FC = () => {
   const { currentFarm, soilSensorNodes, soilAlerts } = useApp();
   const [activePrecisionTab, setActivePrecisionTab] = useState<
-    "multispectral" | "soil_sensors" | "unified"
+    "multispectral" | "soil_sensors" | "unified" | "irrigation"
   >("multispectral");
   const [selectedLayer, setSelectedLayer] = useState<
     "ndvi" | "moisture" | "temperature" | "nitrogen" | "topography" | "pest"
@@ -258,6 +259,20 @@ export const PrecisionAgriView: React.FC = () => {
             <Activity className="w-4 h-4 text-amber-400" />
             <span>Dual Fusion View</span>
           </button>
+
+          <button
+            onClick={() => setActivePrecisionTab("irrigation")}
+            className={`flex-1 sm:flex-initial px-4 py-2 rounded-lg font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+              activePrecisionTab === "irrigation"
+                ? "bg-[#14532D] text-[#FDFBF7] border border-[#196349] shadow-xs"
+                : "text-slate-400 hover:text-white"
+            }`}
+            id="tab-smart-irrigation"
+          >
+            <Droplets className="w-4 h-4 text-cyan-400" />
+            <span>Smart Irrigation Control</span>
+            <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#07261B] text-[#22C55E]">IoT</span>
+          </button>
         </div>
 
         <div className="flex items-center gap-2 text-xs text-slate-400 px-2">
@@ -267,6 +282,11 @@ export const PrecisionAgriView: React.FC = () => {
           </span>
         </div>
       </div>
+
+      {/* VIEW MODE: Smart Irrigation Control */}
+      {activePrecisionTab === "irrigation" && (
+        <SmartIrrigationControl />
+      )}
 
       {/* VIEW MODE 1: Soil Sensor Dashboard only */}
       {activePrecisionTab === "soil_sensors" && (

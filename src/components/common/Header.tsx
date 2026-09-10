@@ -14,6 +14,7 @@ import {
   Smartphone,
   PanelLeftClose,
   PanelLeftOpen,
+  Fingerprint,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { AFRICAN_COUNTRIES } from "../../data/countries";
@@ -42,6 +43,10 @@ export const Header: React.FC<{
     toggleMenu,
     setCurrentView,
     triggerEventSimulation,
+    isBiometricModalOpen,
+    setIsBiometricModalOpen,
+    isSensitiveDataLocked,
+    toggleSensitiveDataLock,
   } = useApp();
 
   const [isCountryMenuOpen, setIsCountryMenuOpen] = useState(false);
@@ -250,11 +255,11 @@ export const Header: React.FC<{
           {/* Voice-First Button */}
           <button
             onClick={() => setIsVoiceModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#0B3D2C] hover:bg-[#0E4B37] text-white text-xs font-bold border border-[#196349] transition-all cursor-pointer shadow-md min-h-[44px]"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#14532D] hover:bg-[#0F3D22] text-[#FDFBF7] text-xs font-bold border border-[#196349] transition-all cursor-pointer shadow-md min-h-[44px]"
             title="Voice interface in 9+ African languages"
             id="voice-assistant-button"
           >
-            <Mic className="w-3.5 h-3.5 text-emerald-300" />
+            <Mic className="w-3.5 h-3.5 text-[#F5B942]" />
             <span className="hidden sm:inline">Voice Assistant</span>
           </button>
 
@@ -269,12 +274,39 @@ export const Header: React.FC<{
             <span className="hidden md:inline font-mono text-white">2G USSD / SMS</span>
           </button>
 
+          {/* Biometric Security Sovereign Vault */}
+          <button
+            onClick={() => {
+              if (isSensitiveDataLocked) {
+                setIsBiometricModalOpen(true);
+              } else {
+                toggleSensitiveDataLock();
+              }
+            }}
+            className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl border text-xs font-semibold transition-colors cursor-pointer min-h-[44px] ${
+              isSensitiveDataLocked
+                ? "bg-[#2A1515] border-red-900/60 text-red-300 hover:bg-[#381B1B]"
+                : "bg-[#07261B] border-[#14533C] text-emerald-300 hover:bg-[#0B3828]"
+            }`}
+            title={
+              isSensitiveDataLocked
+                ? "Dashboard data locked with Biometrics (TouchID/FaceID/Passkey). Click to authenticate."
+                : "Biometric security active. Click to lock sensitive financial and land deed data."
+            }
+            id="biometric-vault-button"
+          >
+            <Fingerprint className={`w-3.5 h-3.5 ${isSensitiveDataLocked ? "text-red-400" : "text-[#22C55E]"}`} />
+            <span className="hidden xl:inline text-white">
+              {isSensitiveDataLocked ? "Vault Locked" : "Biometrics Active"}
+            </span>
+          </button>
+
           {/* Offline Mode Switcher */}
           <button
             onClick={toggleOfflineMode}
             className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl border text-xs font-medium transition-colors cursor-pointer min-h-[44px] ${
               isOffline
-                ? "bg-amber-950/60 border-amber-600 text-amber-300"
+                ? "bg-[#2A180E] border-[#78350F] text-[#F5B942]"
                 : "bg-[#10171B] border-[#1D2A32] text-slate-300 hover:bg-[#162228]"
             }`}
             title={isOffline ? "Currently in Offline Mode" : "Online connection active"}
@@ -282,17 +314,17 @@ export const Header: React.FC<{
           >
             {isOffline ? (
               <>
-                <WifiOff className="w-3.5 h-3.5 text-amber-400" />
+                <WifiOff className="w-3.5 h-3.5 text-[#F5B942]" />
                 <span className="hidden md:inline font-semibold text-white">Offline</span>
                 {syncQueue.length > 0 && (
-                  <span className="px-1.5 py-0.2 bg-amber-500 text-slate-900 rounded-full text-[10px] font-bold font-mono">
+                  <span className="px-1.5 py-0.2 bg-[#F5B942] text-slate-900 rounded-full text-[10px] font-bold font-mono">
                     {syncQueue.length}
                   </span>
                 )}
               </>
             ) : (
               <>
-                <Wifi className="w-3.5 h-3.5 text-emerald-400" />
+                <Wifi className="w-3.5 h-3.5 text-[#22C55E]" />
                 <span className="hidden md:inline text-white font-medium">Online</span>
               </>
             )}
@@ -313,7 +345,7 @@ export const Header: React.FC<{
           >
             <Bell className="w-4 h-4" />
             {unreadNotificationCount > 0 && (
-              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-[#0B1013] animate-pulse" />
+              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#F5B942] ring-2 ring-[#0B1013] animate-pulse" />
             )}
           </button>
 
@@ -348,11 +380,14 @@ export const Header: React.FC<{
                     onClick={() => {
                       setUserRole(r.role);
                       setIsRoleMenuOpen(false);
-                      if (r.role === "farmer") setCurrentView("dashboard");
+                      if (r.role === "farmer") setCurrentView("farms");
                       else if (r.role === "government") setCurrentView("government");
                       else if (r.role === "agribusiness") setCurrentView("agribusiness");
                       else if (r.role === "cooperative") setCurrentView("cooperative");
                       else if (r.role === "superadmin") setCurrentView("admin");
+                      else if (r.role === "buyer") setCurrentView("marketplace");
+                      else if (r.role === "finance") setCurrentView("finance");
+                      else if (r.role === "logistics") setCurrentView("logistics");
                     }}
                     className={`w-full px-3.5 py-2.5 text-xs text-left flex items-center gap-2.5 hover:bg-[#162228] transition-colors cursor-pointer ${
                       userRole === r.role

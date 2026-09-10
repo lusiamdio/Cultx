@@ -32,8 +32,8 @@ export const Sidebar: React.FC = () => {
   } = useApp();
 
   const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { id: "farms", label: "My Farms & Twins", icon: Sprout, count: 3 },
+    { id: "dashboard", label: "Home (Command)", icon: LayoutDashboard },
+    { id: "farms", label: "Farmers & Farm Hub", icon: Sprout, count: 3 },
     { id: "precision", label: "Precision Agriculture", icon: Satellite },
     { id: "crop_doctor", label: "Crop Doctor", icon: Stethoscope, isSpecial: true },
     { id: "climate", label: "Climate Intelligence", icon: CloudSunRain, alert: "Rain 72h" },
@@ -109,7 +109,7 @@ export const Sidebar: React.FC = () => {
                 onClick={() => setCurrentView(item.id)}
                 className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
                   isActive
-                    ? "bg-[#0B3D2C] text-white font-bold shadow-md"
+                    ? "bg-[#14532D] text-[#FDFBF7] font-bold shadow-md"
                     : "text-slate-300 hover:text-white hover:bg-[#162228]"
                 }`}
                 id={`sidebar-nav-${item.id}`}

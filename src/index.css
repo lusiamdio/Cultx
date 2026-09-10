@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+:root {
+  /* Brand Balance: 60% Cream/White/Dark Charcoal, 25% Forest/Fresh Green, 10% Golden Yellow, 5% Earth Brown */
+  --color-forest-green: #14532D;
+  --color-forest-green-hover: #0F3D22;
+  --color-fresh-green: #22C55E;
+  --color-harvest-gold: #F5B942;
+  --color-harvest-gold-hover: #E5A832;
+  --color-earth-brown: #78350F;
+  --color-earth-brown-dark: #2A180E;
+  --color-earth-brown-border: #54311C;
+  --color-warm-cream: #FDFBF7;
+  --color-charcoal-bg: #090D0F;
+  --color-charcoal-surface: #10171B;
+  --color-charcoal-card: #162228;
+}
+
 /* Remove all border lines throughout the platform */
 *,
 *::before,

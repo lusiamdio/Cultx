@@ -24,6 +24,8 @@ import {
   FileText,
   Landmark,
   Globe2,
+  Fingerprint,
+  Unlock,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { DocumentRepository } from "./DocumentRepository";
@@ -33,6 +35,8 @@ import { WorldFoodSecurityStandards } from "./WorldFoodSecurityStandards";
 export const FarmerDashboard: React.FC = () => {
   const {
     currentFarm,
+    setCurrentFarm,
+    farms,
     recommendations,
     applyRecommendation,
     setCurrentView,
@@ -40,6 +44,9 @@ export const FarmerDashboard: React.FC = () => {
     setIsCopilotOpen,
     isOffline,
     farmerDocuments,
+    isSensitiveDataLocked,
+    setIsBiometricModalOpen,
+    toggleSensitiveDataLock,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<"operations" | "yield_prediction" | "food_security" | "documents">("operations");
@@ -49,6 +56,49 @@ export const FarmerDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Farmers Hub Overview Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#10171B] p-4 sm:p-5 rounded-2xl border border-[#1D2A32] shadow-sm">
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="px-3 py-1 rounded-full bg-[#14532D] text-[#FDFBF7] text-xs font-bold flex items-center gap-1.5 shadow-xs">
+              <Sprout className="w-3.5 h-3.5 text-[#F5B942]" />
+              <span>Farmers Hub & Operations</span>
+            </span>
+            <span className="text-[11px] font-mono text-emerald-300 bg-[#07261B] px-2.5 py-0.5 rounded-lg border border-[#14532D]">
+              Micro Plot-Level Telemetry
+            </span>
+          </div>
+          <h1 className="text-xl sm:text-2xl font-extrabold text-[#FDFBF7] tracking-tight">
+            On-Farm Production & Agronomic Management
+          </h1>
+          <p className="text-xs text-slate-300 leading-relaxed max-w-2xl">
+            Manage individual field parcel vegetative health, continuous soil moisture telemetry,
+            daily agronomic task dispatches, and certified land passports.
+          </p>
+        </div>
+
+        {/* Farm Portfolio Switcher */}
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto shrink-0">
+          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+            Active Farm:
+          </label>
+          <select
+            value={currentFarm.id}
+            onChange={(e) => {
+              const f = farms.find((farm) => farm.id === e.target.value);
+              if (f) setCurrentFarm(f);
+            }}
+            className="px-3 py-2 rounded-xl bg-[#162228] text-white text-xs font-semibold border border-[#1D2A32] focus:outline-none focus:border-emerald-500 cursor-pointer"
+          >
+            {farms.map((f) => (
+              <option key={f.id} value={f.id} className="bg-[#162228] text-white">
+                {f.name} ({f.country} • {f.totalHectares} ha)
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {/* Top Header Card: Farm Name, Location, Crop, Status, Trust Score */}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
@@ -57,9 +107,9 @@ export const FarmerDashboard: React.FC = () => {
         className="bg-[#10171B] rounded-2xl p-4 sm:p-5 border border-[#1D2A32] shadow-md flex flex-wrap items-center justify-between gap-4"
       >
         <div className="flex items-center gap-3 sm:gap-4">
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#0B3D2C] border border-[#14533C] text-emerald-400 flex items-center justify-center shadow-sm shrink-0 relative overflow-hidden">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#14532D] border border-[#196349] text-white flex items-center justify-center shadow-sm shrink-0 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/20 to-transparent animate-pulse" />
-            <Sprout className="w-6 h-6 sm:w-7 sm:h-7 relative z-10" />
+            <Sprout className="w-6 h-6 sm:w-7 sm:h-7 relative z-10 text-[#F5B942]" />
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
@@ -101,11 +151,11 @@ export const FarmerDashboard: React.FC = () => {
           <motion.button
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
-            onClick={() => setCurrentView("farms")}
-            className="px-4 py-2.5 rounded-xl bg-[#0B3D2C] hover:bg-[#0E4B37] text-white text-xs font-bold border border-[#196349] transition-all cursor-pointer flex items-center gap-1.5 shadow-md min-h-[44px]"
+            onClick={() => setCurrentView("farm_twin")}
+            className="px-4 py-2.5 rounded-xl bg-[#14532D] hover:bg-[#0F3D22] text-[#FDFBF7] text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-md min-h-[44px]"
           >
-            <span>View Digital Twin</span>
-            <ChevronRight className="w-4 h-4 text-emerald-300" />
+            <span>View Full Digital Twin</span>
+            <ChevronRight className="w-4 h-4 text-[#F5B942]" />
           </motion.button>
         </div>
       </motion.div>
@@ -116,11 +166,11 @@ export const FarmerDashboard: React.FC = () => {
           onClick={() => setActiveTab("operations")}
           className={`flex-1 py-2.5 px-3 sm:px-4 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
             activeTab === "operations"
-              ? "bg-[#0B3D2C] text-white border border-[#196349] shadow-xs"
+              ? "bg-[#14532D] text-[#FDFBF7] shadow-xs"
               : "text-slate-400 hover:text-white"
           }`}
         >
-          <Activity className="w-4 h-4 text-emerald-400" />
+          <Activity className="w-4 h-4 text-[#22C55E]" />
           <span>Farm Operations</span>
         </button>
 
@@ -128,11 +178,11 @@ export const FarmerDashboard: React.FC = () => {
           onClick={() => setActiveTab("yield_prediction")}
           className={`flex-1 py-2.5 px-3 sm:px-4 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
             activeTab === "yield_prediction"
-              ? "bg-[#0B3D2C] text-white border border-[#196349] shadow-xs"
+              ? "bg-[#14532D] text-[#FDFBF7] shadow-xs"
               : "text-slate-400 hover:text-white"
           }`}
         >
-          <TrendingUp className="w-4 h-4 text-emerald-400" />
+          <TrendingUp className="w-4 h-4 text-[#22C55E]" />
           <span>Yield Prediction</span>
           <span className="font-mono text-[10px] bg-[#07261B] text-emerald-300 px-2 py-0.5 rounded-full border border-[#14533C]">
             7.42 t/ha
@@ -143,11 +193,11 @@ export const FarmerDashboard: React.FC = () => {
           onClick={() => setActiveTab("food_security")}
           className={`flex-1 py-2.5 px-3 sm:px-4 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
             activeTab === "food_security"
-              ? "bg-[#0B3D2C] text-white border border-[#196349] shadow-xs"
+              ? "bg-[#14532D] text-[#FDFBF7] shadow-xs"
               : "text-slate-400 hover:text-white"
           }`}
         >
-          <Globe2 className="w-4 h-4 text-emerald-400" />
+          <Globe2 className="w-4 h-4 text-[#22C55E]" />
           <span>World Food Security</span>
           <span className="font-mono text-[10px] bg-[#07261B] text-emerald-300 px-2 py-0.5 rounded-full border border-[#14533C]">
             Codex & FAO
@@ -158,11 +208,11 @@ export const FarmerDashboard: React.FC = () => {
           onClick={() => setActiveTab("documents")}
           className={`flex-1 py-2.5 px-3 sm:px-4 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
             activeTab === "documents"
-              ? "bg-[#0B3D2C] text-white border border-[#196349] shadow-xs"
+              ? "bg-[#14532D] text-[#FDFBF7] shadow-xs"
               : "text-slate-400 hover:text-white"
           }`}
         >
-          <Lock className="w-4 h-4 text-emerald-400" />
+          <Lock className="w-4 h-4 text-[#22C55E]" />
           <span>Document Vault</span>
           <span className="font-mono text-[10px] bg-[#07261B] text-emerald-300 px-2 py-0.5 rounded-full border border-[#14533C]">
             {farmerDocuments.length}
@@ -383,6 +433,89 @@ export const FarmerDashboard: React.FC = () => {
             <span className="text-[11px] font-mono text-emerald-300">Precision: Sentinel-2 + Weather radar</span>
           </div>
         </motion.div>
+      </div>
+
+      {/* Biometric Sovereign Data Vault Banner */}
+      <div className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+        isSensitiveDataLocked
+          ? "bg-[#181111] border-red-900/50"
+          : "bg-[#0B1713] border-[#14533C]"
+      }`}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+              isSensitiveDataLocked
+                ? "bg-red-950/70 border-red-800 text-red-400"
+                : "bg-[#07261B] border-[#14533C] text-emerald-400"
+            }`}>
+              <Fingerprint className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-extrabold text-white">
+                  {isSensitiveDataLocked
+                    ? "Biometric Sovereign Vault: Locked"
+                    : "Biometric Sovereign Vault: Active & Unlocked"}
+                </h3>
+                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                  isSensitiveDataLocked
+                    ? "bg-red-900/60 text-red-300"
+                    : "bg-[#14532D] text-[#FDFBF7]"
+                }`}>
+                  {isSensitiveDataLocked ? "TouchID/FaceID Required" : "FIDO2 Verified"}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {isSensitiveDataLocked
+                  ? "Sensitive bank facilities, cadastral deed registrations, and private off-take prices are cryptographically masked."
+                  : "Private agricultural balances and off-take contracts are currently decrypted in active session."}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+            {isSensitiveDataLocked ? (
+              <button
+                onClick={() => setIsBiometricModalOpen(true)}
+                className="px-4 py-2 rounded-xl bg-[#14532D] hover:bg-[#0F3D22] text-[#FDFBF7] text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-md min-h-[40px]"
+                id="btn-unlock-biometric-dashboard"
+              >
+                <Fingerprint className="w-4 h-4 text-[#F5B942]" />
+                <span>Unlock with Biometrics</span>
+              </button>
+            ) : (
+              <button
+                onClick={toggleSensitiveDataLock}
+                className="px-3.5 py-2 rounded-xl bg-[#162228] hover:bg-[#1D2A32] text-slate-300 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer border border-[#1D2A32] min-h-[40px]"
+              >
+                <Lock className="w-3.5 h-3.5 text-slate-400" />
+                <span>Lock Vault Now</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Vault Values Preview (Masked or Unmasked) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-3 pt-3 border-t border-slate-800/60 text-xs">
+          <div className="bg-[#0B1013] p-2.5 rounded-xl border border-[#1D2A32]">
+            <span className="text-slate-400 text-[10px] uppercase font-bold block">Pre-Approved Seasonal Credit</span>
+            <span className="font-mono font-bold text-white text-sm">
+              {isSensitiveDataLocked ? "•••••••• (Encrypted)" : "$42,000 USD Active Facility"}
+            </span>
+          </div>
+          <div className="bg-[#0B1013] p-2.5 rounded-xl border border-[#1D2A32]">
+            <span className="text-slate-400 text-[10px] uppercase font-bold block">Cadastral Deed Registration</span>
+            <span className="font-mono font-bold text-white text-sm">
+              {isSensitiveDataLocked ? "••••••••••••••••" : "SHA256-ZA-FREE-STATE-2026-9481"}
+            </span>
+          </div>
+          <div className="bg-[#0B1013] p-2.5 rounded-xl border border-[#1D2A32]">
+            <span className="text-slate-400 text-[10px] uppercase font-bold block">Escrow Buyer Pre-Funding</span>
+            <span className="font-mono font-bold text-emerald-400 text-sm">
+              {isSensitiveDataLocked ? "•••••••• (Protected)" : "R1,452,560 (~$79,000 USD)"}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* SECTION 3: Quick Action Buttons (5 Essential Farm Workflows) */}

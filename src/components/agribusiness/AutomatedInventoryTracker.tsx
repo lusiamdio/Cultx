@@ -608,7 +608,7 @@ export const AutomatedInventoryTracker: React.FC = () => {
               onClick={() => setSeasonalScenario("normal")}
               className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 seasonalScenario === "normal"
-                  ? "bg-[#0B3D2C] text-emerald-300 border border-[#196349] font-bold"
+                  ? "bg-[#14532D] text-[#FDFBF7] font-bold shadow-xs"
                   : "text-slate-400 hover:text-white"
               }`}
             >
@@ -737,7 +737,7 @@ export const AutomatedInventoryTracker: React.FC = () => {
                 onClick={() => setSelectedItemId(item.id)}
                 className={`px-3 py-1 rounded-lg text-xs font-mono font-medium shrink-0 transition-all cursor-pointer ${
                   selectedItemId === item.id
-                    ? "bg-[#0B3D2C] text-emerald-300 border border-[#196349] font-bold shadow-xs"
+                    ? "bg-[#14532D] text-[#FDFBF7] font-bold shadow-xs"
                     : "bg-[#162228] text-slate-400 hover:text-white border border-[#1D2A32]"
                 }`}
               >
@@ -1144,9 +1144,9 @@ export const AutomatedInventoryTracker: React.FC = () => {
                           e.stopPropagation();
                           handleOpenReorderModal(item);
                         }}
-                        className="px-3 py-1.5 rounded-xl bg-[#0B3D2C] hover:bg-[#0E4B37] text-emerald-300 text-xs font-bold border border-[#196349] transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-xs"
+                        className="px-3 py-1.5 rounded-xl bg-[#14532D] hover:bg-[#0F3D22] text-[#FDFBF7] text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-xs"
                       >
-                        <ShoppingCart className="w-3.5 h-3.5" />
+                        <ShoppingCart className="w-3.5 h-3.5 text-[#F5B942]" />
                         <span>Reorder PO</span>
                       </button>
                     </td>
@@ -1378,9 +1378,9 @@ export const AutomatedInventoryTracker: React.FC = () => {
               <button
                 onClick={handleSubmitPO}
                 disabled={isSubmittingPO}
-                className="px-5 py-2 rounded-xl bg-[#0B3D2C] hover:bg-[#0E4B37] text-white text-xs font-bold border border-[#196349] transition-all cursor-pointer flex items-center gap-2 shadow-md min-h-[40px]"
+                className="px-5 py-2 rounded-xl bg-[#14532D] hover:bg-[#0F3D22] text-[#FDFBF7] text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shadow-md min-h-[40px]"
               >
-                <Send className="w-3.5 h-3.5 text-emerald-300" />
+                <Send className="w-3.5 h-3.5 text-[#F5B942]" />
                 <span>{isSubmittingPO ? "Transmitting PO..." : "Issue Purchase Order & Freight"}</span>
               </button>
             </div>

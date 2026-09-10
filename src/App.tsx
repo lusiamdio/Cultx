@@ -14,6 +14,7 @@ import { LiveMarketTicker } from "./components/common/LiveMarketTicker";
 
 // Feature Views
 import { LandingPage } from "./components/landing/LandingPage";
+import { HomeCommandCenter } from "./components/dashboard/HomeCommandCenter";
 import { FarmerDashboard } from "./components/dashboard/FarmerDashboard";
 import { FarmTwinView } from "./components/farms/FarmTwinView";
 import { PrecisionAgriView } from "./components/farms/PrecisionAgriView";
@@ -31,6 +32,8 @@ import { SuperAdminView } from "./components/admin/SuperAdminView";
 // Advisory & Diagnostic Assistants
 import { CropDoctorView } from "./components/copilot/CropDoctorView";
 import { FloatingAICopilot } from "./components/copilot/FloatingAICopilot";
+import { WebsiteFooter } from "./components/common/WebsiteFooter";
+import { BiometricAuthModal } from "./components/common/BiometricAuthModal";
 
 const AppContent: React.FC = () => {
   const {
@@ -39,6 +42,9 @@ const AppContent: React.FC = () => {
     isUssdModalOpen,
     setIsUssdModalOpen,
     isMenuHidden,
+    isBiometricModalOpen,
+    setIsBiometricModalOpen,
+    setIsSensitiveDataLocked,
   } = useApp();
 
   const renderActiveView = () => {
@@ -46,10 +52,17 @@ const AppContent: React.FC = () => {
       case "landing":
         return <LandingPage />;
       case "dashboard":
+      case "home":
+        return <HomeCommandCenter />;
+      case "farms":
+      case "farmer":
+      case "farmers":
         return <FarmerDashboard />;
       case "farm_twin":
+      case "farm-twin":
         return <FarmTwinView />;
       case "precision_ag":
+      case "precision":
         return <PrecisionAgriView />;
       case "crop_doctor":
       case "crop-doctor":
@@ -75,7 +88,7 @@ const AppContent: React.FC = () => {
       case "admin":
         return <SuperAdminView />;
       default:
-        return <FarmerDashboard />;
+        return <HomeCommandCenter />;
     }
   };
 
@@ -90,6 +103,11 @@ const AppContent: React.FC = () => {
         <UssdSimulatorModal isOpen={isUssdModalOpen} onClose={() => setIsUssdModalOpen(false)} />
         <FloatingAICopilot />
         <ProgressiveOnboarding />
+        <BiometricAuthModal
+          isOpen={isBiometricModalOpen}
+          onClose={() => setIsBiometricModalOpen(false)}
+          onSuccess={() => setIsSensitiveDataLocked(false)}
+        />
       </div>
     );
   }
@@ -110,7 +128,7 @@ const AppContent: React.FC = () => {
         {!isMenuHidden && <Sidebar />}
 
         {/* Primary Operational Viewport with Fluid Motion Transitions */}
-        <main className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-7 max-w-7xl mx-auto w-full">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-7 max-w-7xl mx-auto w-full flex flex-col justify-between">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentView}
@@ -126,6 +144,11 @@ const AppContent: React.FC = () => {
               {renderActiveView()}
             </motion.div>
           </AnimatePresence>
+
+          {/* Persistent World-Class Footer */}
+          <div className="mt-14 -mx-3 sm:-mx-5 lg:-mx-7">
+            <WebsiteFooter />
+          </div>
         </main>
       </div>
 
@@ -139,6 +162,11 @@ const AppContent: React.FC = () => {
       <FloatingAICopilot />
       <NotificationDrawer />
       <ProgressiveOnboarding />
+      <BiometricAuthModal
+        isOpen={isBiometricModalOpen}
+        onClose={() => setIsBiometricModalOpen(false)}
+        onSuccess={() => setIsSensitiveDataLocked(false)}
+      />
     </div>
   );
 };

@@ -88,6 +88,7 @@ interface AppContextType {
   notifications: NotificationItem[];
   markNotificationAsRead: (id: string) => void;
   unreadNotificationCount: number;
+  addNotification: (notif: Omit<NotificationItem, "id"> | NotificationItem) => void;
 
   // Modals & Drawers
   isCropDoctorOpen: boolean;
@@ -129,6 +130,13 @@ interface AppContextType {
   triggerIrrigationValve: (nodeId: string) => void;
   soilAlerts: SensorTelemetryAlert[];
   dismissSoilAlert: (id: string) => void;
+
+  // Biometric Sovereign Security
+  isBiometricModalOpen: boolean;
+  setIsBiometricModalOpen: (open: boolean) => void;
+  isSensitiveDataLocked: boolean;
+  setIsSensitiveDataLocked: (locked: boolean) => void;
+  toggleSensitiveDataLock: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -179,6 +187,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState<boolean>(false);
   const [isMenuHidden, setIsMenuHidden] = useState<boolean>(false);
   const toggleMenu = () => setIsMenuHidden((prev) => !prev);
+
+  // Biometric Sovereign Security
+  const [isBiometricModalOpen, setIsBiometricModalOpen] = useState<boolean>(false);
+  const [isSensitiveDataLocked, setIsSensitiveDataLocked] = useState<boolean>(false);
+  const toggleSensitiveDataLock = () => setIsSensitiveDataLocked((prev) => !prev);
 
   // Consent
   const [dataConsent, setDataConsent] = useState<DataConsentSettings>({
@@ -384,6 +397,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
+  const addNotification = (notif: Omit<NotificationItem, "id"> | NotificationItem) => {
+    const newNotif: NotificationItem = {
+      ...notif,
+      id: "id" in notif ? notif.id : `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    };
+    setNotifications((prev) => [newNotif, ...prev]);
+  };
+
   const updateDataConsent = (settings: Partial<DataConsentSettings>) => {
     setDataConsent((prev) => ({ ...prev, ...settings }));
   };
@@ -486,6 +507,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         notifications,
         markNotificationAsRead,
         unreadNotificationCount,
+        addNotification,
         isCropDoctorOpen,
         setIsCropDoctorOpen,
         isVoiceModalOpen,
@@ -517,6 +539,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         triggerIrrigationValve,
         soilAlerts,
         dismissSoilAlert,
+        isBiometricModalOpen,
+        setIsBiometricModalOpen,
+        isSensitiveDataLocked,
+        setIsSensitiveDataLocked,
+        toggleSensitiveDataLock,
       }}
     >
       {children}
