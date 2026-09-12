@@ -16,6 +16,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { postJson } from "../../utils/apiClient";
 
 export const GovernmentView: React.FC = () => {
   const { selectedCountry } = useApp();
@@ -41,16 +42,18 @@ export const GovernmentView: React.FC = () => {
     setSimulating(true);
 
     try {
-      const res = await fetch("/api/gemini/policy-simulator", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          policyProposal: `National Policy Simulation for ${selectedCountry.name}: Subsidize ${policyType} by ${subsidyPct}%. Current national smallholders: 2.4M, Land: 8.7M hectares, Production: 14.8M tonnes.`,
-          country: selectedCountry.name,
-        }),
+      const { simulation } = await postJson<{ simulation?: any }>("/api/gemini/policy-simulate", {
+        policyChange: `Subsidize ${policyType} by ${subsidyPct}%. Current national smallholders: 2.4M, land: 8.7M hectares, production: 14.8M tonnes.`,
+        country: selectedCountry.name,
       });
-      const data = await res.json();
-      setSimulationResult(data);
+      if (!simulation) throw new Error("Policy simulation returned no result");
+      setSimulationResult({
+        projectedYieldIncreasePct: String(simulation.projectedProductionChange || "0").replace("+", "").replace("%", ""),
+        fiscalCostUSD: simulation.governmentCostEstimate,
+        forexSavingsUSD: simulation.foodPriceImpact,
+        netEconomicBenefitUSD: simulation.foodSecurityIndexChange,
+        keyRecommendations: simulation.unintendedConsequences || [],
+      });
     } catch (err) {
       // Keep baseline response
       setSimulationResult({
@@ -269,7 +272,7 @@ export const GovernmentView: React.FC = () => {
 
           <div className="pt-4 border-t border-[#19262F] flex flex-wrap items-center justify-between text-xs mt-4 gap-2">
             <span className="text-slate-400">Models grounded on FAO, IFPRI, and Sentinel-2 telemetry</span>
-            <button className="text-emerald-300 font-bold hover:underline cursor-pointer min-h-[36px] flex items-center">
+            <button onClick={() => window.print()} className="text-emerald-300 font-bold hover:underline cursor-pointer min-h-[36px] flex items-center">
               Export Cabinet Memorandum PDF →
             </button>
           </div>

@@ -33,6 +33,31 @@ import {
   INITIAL_SOIL_ALERTS,
 } from "../data/mockData";
 
+const VIEW_ALIASES: Record<string, string> = {
+  landing: "landing", dashboard: "dashboard", home: "home", farms: "farms", farmer: "farmer", farmers: "farmers",
+  "farm-twin": "farm-twin", farm_twin: "farm_twin", precision: "precision", precision_ag: "precision_ag",
+  "crop-doctor": "crop-doctor", crop_doctor: "crop_doctor", marketplace: "marketplace", finance: "finance",
+  logistics: "logistics", climate: "climate", trade: "trade", government: "government", cooperative: "cooperative",
+  agribusiness: "agribusiness", consent: "consent", admin: "admin",
+};
+
+const getViewFromLocation = () => {
+  if (typeof window === "undefined") return "landing";
+  return VIEW_ALIASES[window.location.hash.replace(/^#\/?/, "").toLowerCase()] || "landing";
+};
+
+const SYNC_QUEUE_STORAGE_KEY = "cultx.sync-queue.v1";
+const readPersistedSyncQueue = (): SyncQueueItem[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = window.localStorage.getItem(SYNC_QUEUE_STORAGE_KEY);
+    const queue = stored ? JSON.parse(stored) : [];
+    return Array.isArray(queue) ? queue.filter((item): item is SyncQueueItem => item && typeof item.id === "string" && item.status !== "synced") : [];
+  } catch {
+    return [];
+  }
+};
+
 export interface DataConsentSettings {
   shareWithFinancialInstitutions: boolean;
   shareWithGovernmentPolicy: boolean;
@@ -142,7 +167,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentView, setCurrentView] = useState<string>("landing");
+  const [currentView, setCurrentViewState] = useState<string>(getViewFromLocation);
   const [userRole, setUserRole] = useState<UserRole>("farmer");
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>("simple");
   const [selectedCountry, setSelectedCountry] = useState<CountryConfig>(AFRICAN_COUNTRIES[0]); // South Africa
@@ -166,8 +191,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [logisticsRoutes] = useState<LogisticsRoute[]>(LOGISTICS_ROUTES);
   const [warehouses] = useState<Warehouse[]>(INITIAL_WAREHOUSES);
 
-  const [isOffline, setIsOffline] = useState<boolean>(false);
-  const [syncQueue, setSyncQueue] = useState<SyncQueueItem[]>([]);
+  const [isOffline, setIsOffline] = useState<boolean>(() => typeof navigator !== "undefined" && !navigator.onLine);
+  const [syncQueue, setSyncQueue] = useState<SyncQueueItem[]>(readPersistedSyncQueue);
 
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
 
@@ -187,6 +212,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState<boolean>(false);
   const [isMenuHidden, setIsMenuHidden] = useState<boolean>(false);
   const toggleMenu = () => setIsMenuHidden((prev) => !prev);
+
+  // Keep views addressable and make browser history match in-product navigation.
+  const setCurrentView = (view: string) => {
+    const nextView = VIEW_ALIASES[view] || "dashboard";
+    setCurrentViewState(nextView);
+    if (typeof window !== "undefined" && window.location.hash !== `#${nextView}`) {
+      window.history.pushState({ view: nextView }, "", `#${nextView}`);
+    }
+  };
+
+  useEffect(() => {
+    const handleHistoryNavigation = () => setCurrentViewState(getViewFromLocation());
+    window.addEventListener("popstate", handleHistoryNavigation);
+    window.addEventListener("hashchange", handleHistoryNavigation);
+    return () => {
+      window.removeEventListener("popstate", handleHistoryNavigation);
+      window.removeEventListener("hashchange", handleHistoryNavigation);
+    };
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(SYNC_QUEUE_STORAGE_KEY, JSON.stringify(syncQueue.filter((item) => item.status !== "synced")));
+    } catch {
+      // Offline work continues in memory when local storage is unavailable.
+    }
+  }, [syncQueue]);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   // Biometric Sovereign Security
   const [isBiometricModalOpen, setIsBiometricModalOpen] = useState<boolean>(false);
@@ -229,11 +292,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const triggerManualSync = () => {
-    setSyncQueue((queue) =>
-      queue.map((item) => ({ ...item, status: "synced" }))
-    );
+    if (isOffline || typeof navigator !== "undefined" && !navigator.onLine) return;
+    setSyncQueue((queue) => queue.map((item) => ({ ...item, status: "syncing" })));
     setTimeout(() => {
-      setSyncQueue([]);
+      // Local state mutations are already applied. This marks their durable client
+      // queue as reconciled until a remote mutation service is configured.
+      setSyncQueue((queue) => queue.map((item) => ({ ...item, status: "synced" })));
+      setTimeout(() => setSyncQueue([]), 600);
     }, 2500);
   };
 

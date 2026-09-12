@@ -12,6 +12,7 @@ import {
   Mic,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { postJson } from "../../utils/apiClient";
 
 export const FloatingAICopilot: React.FC = () => {
   const { isCopilotOpen, setIsCopilotOpen, currentFarm, userRole, setIsVoiceModalOpen } = useApp();
@@ -46,25 +47,20 @@ export const FloatingAICopilot: React.FC = () => {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/gemini/copilot", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: userMsg,
-          farmContext: {
-            farmName: currentFarm.name,
-            crop: currentFarm.primaryCrop,
-            hectares: currentFarm.totalHectares,
-            healthScore: currentFarm.overallHealthScore,
-            soilHealth: currentFarm.soilHealth,
-            waterIndex: currentFarm.waterIndex,
-            currentRole: userRole,
-            marketMaizePrice: "R5,420/t (+1.4%)",
-            weather72h: "32-48mm convective rain arriving in 72h",
-          },
-        }),
+      const data = await postJson<{ answer?: string }>("/api/gemini/copilot", {
+        query: userMsg,
+        farmContext: {
+          farmName: currentFarm.name,
+          crop: currentFarm.primaryCrop,
+          hectares: currentFarm.totalHectares,
+          healthScore: currentFarm.overallHealthScore,
+          soilHealth: currentFarm.soilHealth,
+          waterIndex: currentFarm.waterIndex,
+          currentRole: userRole,
+          marketMaizePrice: "R5,420/t (+1.4%)",
+          weather72h: "32-48mm convective rain arriving in 72h",
+        },
       });
-      const data = await res.json();
       setMessages((prev) => [
         ...prev,
         {

@@ -182,7 +182,9 @@ export interface SyncQueueItem {
   action: string;
   entity: string;
   timestamp: string;
-  status: "pending" | "synced";
+  status: "pending" | "syncing" | "synced" | "failed";
+  retryCount?: number;
+  lastError?: string;
 }
 
 export interface PersonaProfile {

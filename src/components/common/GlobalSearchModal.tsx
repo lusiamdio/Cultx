@@ -1,10 +1,19 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Search, X, Sprout, ShoppingBag, Truck, Coins, ArrowRight } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 
 export const GlobalSearchModal: React.FC = () => {
   const { isSearchModalOpen, setIsSearchModalOpen, setCurrentView, farms, marketListings, commodityPrices } = useApp();
   const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    if (!isSearchModalOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsSearchModalOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [isSearchModalOpen, setIsSearchModalOpen]);
 
   if (!isSearchModalOpen) return null;
 
@@ -30,8 +39,8 @@ export const GlobalSearchModal: React.FC = () => {
   );
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0B1013]/80 backdrop-blur-md flex items-start justify-center pt-16 px-4 animate-in fade-in">
-      <div className="bg-[#10171B] rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden text-white">
+    <div className="fixed inset-0 z-50 bg-[#0B1013]/80 backdrop-blur-md flex items-start justify-center pt-16 px-4 animate-in fade-in" onMouseDown={() => setIsSearchModalOpen(false)}>
+      <div role="dialog" aria-modal="true" aria-label="Global search" className="bg-[#10171B] rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden text-white" onMouseDown={(event) => event.stopPropagation()}>
         {/* Search Input Bar */}
         <div className="p-3.5 flex items-center gap-3 bg-[#07261B]">
           <img
@@ -58,6 +67,7 @@ export const GlobalSearchModal: React.FC = () => {
           <button
             onClick={() => setIsSearchModalOpen(false)}
             className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-[#162228] cursor-pointer"
+            aria-label="Close search"
           >
             <X className="w-5 h-5" />
           </button>

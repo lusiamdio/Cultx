@@ -7,9 +7,54 @@ import { GoogleGenAI } from "@google/genai";
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
+
+type ApiErrorBody = { error: { code: string; message: string; requestId: string } };
+
+const createRequestId = () => `req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+const requestTimestamps = new Map<string, number[]>();
+const API_RATE_LIMIT = 60;
+const API_RATE_WINDOW_MS = 60_000;
+
+app.disable("x-powered-by");
+app.use((req, res, next) => {
+  const requestId = createRequestId();
+  res.locals.requestId = requestId;
+  res.setHeader("X-Request-Id", requestId);
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("X-Frame-Options", "DENY");
+  next();
+});
+
+app.use("/api", (req, res, next) => {
+  const clientKey = req.ip || "unknown";
+  const now = Date.now();
+  const timestamps = (requestTimestamps.get(clientKey) || []).filter((timestamp) => now - timestamp < API_RATE_WINDOW_MS);
+  if (timestamps.length >= API_RATE_LIMIT) {
+    return res.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many requests. Please try again shortly.", requestId: res.locals.requestId } } satisfies ApiErrorBody);
+  }
+  timestamps.push(now);
+  requestTimestamps.set(clientKey, timestamps);
+  next();
+});
 
 app.use(express.json({ limit: "25mb" }));
+app.use((error: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (error instanceof SyntaxError && "body" in error) {
+    return res.status(400).json({ error: { code: "INVALID_JSON", message: "Request body must be valid JSON.", requestId: res.locals.requestId } } satisfies ApiErrorBody);
+  }
+  next(error);
+});
+
+const readString = (value: unknown, field: string, maxLength = 10_000): string | null => {
+  if (typeof value !== "string" || !value.trim()) return null;
+  if (value.length > maxLength) return null;
+  return value.trim();
+};
+
+const badRequest = (res: express.Response, message: string) =>
+  res.status(400).json({ error: { code: "INVALID_REQUEST", message, requestId: res.locals.requestId } } satisfies ApiErrorBody);
 
 // Initialize Gemini SDK with User-Agent header as required
 let genAI: GoogleGenAI | null = null;
@@ -35,7 +80,6 @@ function getGeminiClient(): GoogleGenAI | null {
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
-    hasApiKey: Boolean(process.env.GEMINI_API_KEY),
     timestamp: new Date().toISOString(),
     service: "AgriIntel Africa / CULTx Backend",
   });
@@ -43,11 +87,13 @@ app.get("/api/health", (req, res) => {
 
 // 1. AI Agricultural Copilot Endpoint
 app.post("/api/gemini/copilot", async (req, res) => {
-  const { query, farmContext, language = "English" } = req.body;
+  const query = readString(req.body?.query, "query", 4_000);
+  const farmContext = req.body?.farmContext;
+  const language = readString(req.body?.language || "English", "language", 80) || "English";
   const ai = getGeminiClient();
 
   if (!query) {
-    return res.status(400).json({ error: "Missing query" });
+    return badRequest(res, "A non-empty query of up to 4,000 characters is required.");
   }
 
   if (ai) {
@@ -106,8 +152,13 @@ If the language is not English, respond in the requested language (${language}) 
 // 2. AI Crop Doctor (Vision & Diagnostic)
 app.post("/api/gemini/crop-doctor", async (req, res) => {
   const imageBase64 = req.body.imageBase64 || req.body.imageData || req.body.image;
-  const { cropType = "Maize", symptomsDescription = "" } = req.body;
+  const cropType = readString(req.body?.cropType || "Maize", "cropType", 100) || "Maize";
+  const symptomsDescription = readString(req.body?.symptomsDescription || "", "symptomsDescription", 4_000) || "";
   const ai = getGeminiClient();
+
+  if (imageBase64 && (typeof imageBase64 !== "string" || imageBase64.length > 20_000_000)) {
+    return badRequest(res, "Image data must be a valid image data URL smaller than 15 MB.");
+  }
 
   if (ai && imageBase64) {
     try {
@@ -187,8 +238,12 @@ Analyze the crop image carefully and return JSON strictly with this structure:
 
 // 3. Digital Contract Risk Audit
 app.post("/api/gemini/contract-audit", async (req, res) => {
-  const { contractDetails } = req.body;
+  const contractDetails = req.body?.contractDetails;
   const ai = getGeminiClient();
+
+  if (!contractDetails || typeof contractDetails !== "object" || Array.isArray(contractDetails)) {
+    return badRequest(res, "Contract details are required for an audit.");
+  }
 
   if (ai && contractDetails) {
     try {
@@ -255,8 +310,14 @@ Return JSON:
 
 // 4. Policy Simulator
 app.post("/api/gemini/policy-simulate", async (req, res) => {
-  const { country = "Kenya", policyChange, baseline } = req.body;
+  const country = readString(req.body?.country || "Kenya", "country", 100) || "Kenya";
+  const policyChange = readString(req.body?.policyChange, "policyChange", 4_000);
+  const baseline = req.body?.baseline;
   const ai = getGeminiClient();
+
+  if (!policyChange) {
+    return badRequest(res, "A policy change description is required.");
+  }
 
   if (ai && policyChange) {
     try {
@@ -313,7 +374,9 @@ Return JSON:
 
 // 5. Commodity Price Forecast
 app.post("/api/gemini/price-forecast", async (req, res) => {
-  const { commodity = "Maize", country = "South Africa", currentPrice = "R5,420/t" } = req.body;
+  const commodity = readString(req.body?.commodity || "Maize", "commodity", 100) || "Maize";
+  const country = readString(req.body?.country || "South Africa", "country", 100) || "South Africa";
+  const currentPrice = readString(req.body?.currentPrice || "R5,420/t", "currentPrice", 100) || "R5,420/t";
   const ai = getGeminiClient();
 
   if (ai) {
@@ -365,8 +428,14 @@ Return JSON:
 
 // 6. Inventory Global Food Security & Regional Export Compliance Assessment
 app.post("/api/gemini/inventory-compliance-report", async (req, res) => {
-  const { inventorySummary, projectedQuarters, regionalBufferThreshold = 15 } = req.body;
+  const inventorySummary = req.body?.inventorySummary;
+  const projectedQuarters = req.body?.projectedQuarters;
+  const regionalBufferThreshold = Number(req.body?.regionalBufferThreshold ?? 15);
   const ai = getGeminiClient();
+
+  if (!inventorySummary || !Array.isArray(projectedQuarters) || !Number.isFinite(regionalBufferThreshold) || regionalBufferThreshold < 0 || regionalBufferThreshold > 100) {
+    return badRequest(res, "Inventory summary, quarterly projections, and a buffer threshold from 0 to 100 are required.");
+  }
 
   if (ai) {
     try {
@@ -519,6 +588,18 @@ Provide a rigorous, authoritative audit report strictly in JSON:
     },
     source: "agriintel-food-security-engine",
   });
+});
+
+app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error("Unhandled API error", { requestId: res.locals.requestId, error });
+  if (res.headersSent) return;
+  res.status(500).json({
+    error: {
+      code: "INTERNAL_ERROR",
+      message: "The request could not be completed. Please try again.",
+      requestId: res.locals.requestId,
+    },
+  } satisfies ApiErrorBody);
 });
 
 // Vite Middleware for development vs Static Production Serving
