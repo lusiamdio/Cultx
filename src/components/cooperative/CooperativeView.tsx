@@ -17,7 +17,7 @@ import {
 import { useApp } from "../../context/AppContext";
 
 export const CooperativeView: React.FC = () => {
-  const { currentFarm } = useApp();
+  const { currentFarm, addNotification } = useApp();
   const [selectedCampaign, setSelectedCampaign] = useState<number>(0);
   const [pledgeModalOpen, setPledgeModalOpen] = useState(false);
   const [pledgeAmount, setPledgeAmount] = useState("10"); // 10 MT or 10 ha
@@ -203,7 +203,7 @@ export const CooperativeView: React.FC = () => {
               Aggregated collective capacity: 4,120 Hectares • 24,000 Tonnes Off-take Forward Volume
             </p>
           </div>
-          <button className="text-xs font-bold text-emerald-300 hover:underline cursor-pointer min-h-[36px] flex items-center">
+          <button onClick={() => addNotification({ type: "opportunity", title: "Member invitation ready", message: "A secure cooperative invitation has been prepared for a local smallholder.", timestamp: "Just now", read: false })} className="text-xs font-bold text-emerald-300 hover:underline cursor-pointer min-h-[36px] flex items-center">
             + Invite Local Smallholder
           </button>
         </div>

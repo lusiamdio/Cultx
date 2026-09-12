@@ -16,7 +16,7 @@
   --color-charcoal-card: #162228;
 }
 
-/* Remove all border lines throughout the platform */
+/* Remove hard divider lines while preserving native form controls and focus states. */
 *,
 *::before,
 *::after {
@@ -28,6 +28,31 @@
 hr {
   border: none !important;
   height: 0 !important;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-fresh-green) !important;
+  outline-offset: 3px;
+  border-radius: 0.5rem;
+}
+
+button:disabled { cursor: not-allowed; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Professional Motion Graphics & Telemetry Keyframes */

@@ -159,15 +159,23 @@ export const MarketplaceView: React.FC = () => {
     setAuditResult(null);
 
     try {
-      const res = await fetch("/api/gemini/audit-contract", {
+      const res = await fetch("/api/gemini/contract-audit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contractText: `Contract ${contract.contractNumber}: Buyer: ${contract.buyerName}, Seller: ${contract.sellerName}, Commodity: ${contract.commodity}, Quantity: ${contract.quantityTonnes} MT at ${contract.pricePerTonne}. Quality: ${contract.qualityStandard}. Delivery: ${contract.deliveryLocation} on ${contract.deliveryDate}. Payment: ${contract.paymentTerms}.`,
+          contractDetails: contract,
         }),
       });
-      const data = await res.json();
-      setAuditResult(data);
+      if (!res.ok) throw new Error("Contract audit request failed");
+      const { audit } = await res.json();
+      if (!audit) throw new Error("Contract audit returned no result");
+      setAuditResult({
+        overallRiskScore: audit.riskScore,
+        riskLevel: audit.overallVerdict,
+        summary: audit.recommendations?.join(" ") || "Contract review completed.",
+        risksIdentified: audit.identifiedRisks || [],
+        recommendedAmendments: audit.recommendations || [],
+      });
     } catch (err) {
       setAuditResult({
         overallRiskScore: 18,
@@ -789,7 +797,7 @@ export const MarketplaceView: React.FC = () => {
 
             <div className="pt-4 border-t border-[#19262F] flex items-center justify-between text-xs mt-4">
               <span className="text-slate-400">Settlement via PAPSS or National RTGS</span>
-              <button className="text-emerald-400 font-bold hover:underline cursor-pointer min-h-[44px]">
+              <button onClick={() => window.print()} className="text-emerald-400 font-bold hover:underline cursor-pointer min-h-[44px]">
                 Download Signed PDF →
               </button>
             </div>

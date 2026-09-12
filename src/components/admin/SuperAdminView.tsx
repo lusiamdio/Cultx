@@ -11,10 +11,8 @@ import {
   AlertCircle,
   CheckCircle2,
 } from "lucide-react";
-import { useApp } from "../../context/AppContext";
 
 export const SuperAdminView: React.FC = () => {
-  const { supportedCountries } = useApp();
   const [selectedCluster, setSelectedCluster] = useState<string>("All Regions");
 
   const telemetryPipelines = [
@@ -172,7 +170,7 @@ export const SuperAdminView: React.FC = () => {
 
           <div className="pt-4 border-t border-[#19262F] flex flex-wrap items-center justify-between text-xs mt-4 gap-2">
             <span className="text-slate-400">Cloud Run Containers • Primary Node: af-south-1</span>
-            <button className="text-emerald-300 font-bold hover:underline cursor-pointer min-h-[36px] flex items-center">
+            <button onClick={() => window.print()} className="text-emerald-300 font-bold hover:underline cursor-pointer min-h-[36px] flex items-center">
               Download ISO 27001 Audit Certificate →
             </button>
           </div>
