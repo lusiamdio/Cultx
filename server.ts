@@ -3,7 +3,7 @@ import path from "path";
 import dotenv from "dotenv";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
-import { audit, completePasswordReset, confirmMfa, register, requireAuth, requireFarmAccess, requireOrganizationAccess, requireRole, revokeSessions, setupMfa, signIn, startPasswordReset } from "./server/auth";
+
 
 dotenv.config();
 
@@ -93,9 +93,7 @@ const setSessionCookie = (res: express.Response, token: string, expiresAt: strin
 
 // Public identity endpoints. All application data endpoints below require a session.
 app.post("/api/auth/register", (req, res) => {
-  const email = readString(req.body?.email, "email", 320), password = readString(req.body?.password, "password", 256), organizationName = readString(req.body?.organizationName, "organizationName", 200), countryCode = readString(req.body?.countryCode, "countryCode", 2)?.toUpperCase();
-  if (!email || !password || !organizationName || !countryCode) return badRequest(res, "Email, password, organization name, and country code are required.");
-  try { register(email, password, organizationName, countryCode); return res.status(201).json({ success: true }); } catch (error) { return badRequest(res, error instanceof Error ? error.message : "Unable to create account."); }
+
 });
 app.post("/api/auth/sign-in", (req, res) => {
   const email = readString(req.body?.email, "email", 320), password = readString(req.body?.password, "password", 256), mfaCode = readString(req.body?.mfaCode, "mfaCode", 10) || undefined;
@@ -103,14 +101,14 @@ app.post("/api/auth/sign-in", (req, res) => {
   try { const session = signIn(email, password, mfaCode); setSessionCookie(res, session.token, session.expiresAt); return res.json({ user: session.user, expiresAt: session.expiresAt }); } catch (error) { return res.status(401).json({ error: { code: "SIGN_IN_FAILED", message: error instanceof Error ? error.message : "Unable to sign in.", requestId: res.locals.requestId } }); }
 });
 app.get("/api/auth/me", requireAuth, (req, res) => res.json({ user: req.auth }));
-app.post("/api/auth/logout", requireAuth, (req, res) => { revokeSessions(req.auth!.id); res.setHeader("Set-Cookie", "cultx_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0"); res.status(204).end(); });
+
 app.post("/api/auth/logout-all", requireAuth, (req, res) => { revokeSessions(req.auth!.id); res.setHeader("Set-Cookie", "cultx_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0"); res.status(204).end(); });
 app.post("/api/auth/password-reset/request", (req, res) => { const email = readString(req.body?.email, "email", 320); if (!email) return badRequest(res, "Email is required."); const token = startPasswordReset(email); /* Send token using a transactional email provider in production; never return it. */ if (process.env.NODE_ENV !== "production" && token) console.info(`Password reset token for ${email}: ${token}`); return res.status(202).json({ success: true }); });
 app.post("/api/auth/password-reset/confirm", (req, res) => { const token = readString(req.body?.token, "token", 200), password = readString(req.body?.password, "password", 256); if (!token || !password) return badRequest(res, "Token and password are required."); try { completePasswordReset(token, password); return res.status(204).end(); } catch (error) { return badRequest(res, error instanceof Error ? error.message : "Unable to reset password."); } });
 app.post("/api/auth/mfa/setup", requireAuth, (req, res) => res.json(setupMfa(req.auth!.id)));
 app.post("/api/auth/mfa/confirm", requireAuth, (req, res) => { const code = readString(req.body?.code, "code", 10); if (!code) return badRequest(res, "MFA code is required."); try { confirmMfa(req.auth!.id, code); return res.status(204).end(); } catch (error) { return badRequest(res, error instanceof Error ? error.message : "Unable to enable MFA."); } });
 
-app.get("/api/audit-logs", requireAuth, requireRole("platform_admin"), (req, res) => { audit(req.auth!.id, "audit.read", "audit_log", null); res.json({ entries: [] }); });
+
 app.get("/api/organizations/:organizationId", requireAuth, (req, res, next) => requireOrganizationAccess(req.params.organizationId)(req, res, next), (req, res) => res.json({ organizationId: req.params.organizationId }));
 app.get("/api/farms/:farmId", requireAuth, (req, res, next) => requireFarmAccess(req.params.farmId)(req, res, next), (req, res) => res.json({ farmId: req.params.farmId }));
 

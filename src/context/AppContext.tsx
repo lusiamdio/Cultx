@@ -194,6 +194,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialRole?: Us
   const [isOffline, setIsOffline] = useState<boolean>(() => typeof navigator !== "undefined" && !navigator.onLine);
   const [syncQueue, setSyncQueue] = useState<SyncQueueItem[]>(readPersistedSyncQueue);
 
+  // Persist only the client-side offline queue; server mutations still require authorization on reconnect.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("cultx-sync-queue", JSON.stringify(syncQueue));
+    } catch {
+      // Storage may be unavailable in private browsing; the in-memory queue remains usable.
+    }
+  }, [syncQueue]);
+
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
 
   // Modals

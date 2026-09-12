@@ -5,7 +5,7 @@ import { mkdirSync } from "node:fs";
 import type { NextFunction, Request, Response } from "express";
 
 export type AppRole = "farmer" | "cooperative_admin" | "buyer" | "government_officer" | "platform_admin";
-export type AuthenticatedUser = { id: string; email: string; organizationId: string; countryCode: string; roles: AppRole[]; permissions: string[] };
+
 
 declare global { namespace Express { interface Request { auth?: AuthenticatedUser } } }
 
@@ -21,6 +21,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS role_permissions (role_id TEXT NOT NULL REFERENCES roles(id), permission_id TEXT NOT NULL REFERENCES permissions(id), PRIMARY KEY(role_id, permission_id));
   CREATE TABLE IF NOT EXISTS memberships (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), organization_id TEXT NOT NULL REFERENCES organizations(id), role_id TEXT NOT NULL REFERENCES roles(id), delegated_consent INTEGER NOT NULL DEFAULT 0, UNIQUE(user_id, organization_id, role_id));
   CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), token_hash TEXT NOT NULL UNIQUE, expires_at TEXT NOT NULL, revoked_at TEXT, created_at TEXT NOT NULL);
+
   CREATE TABLE IF NOT EXISTS password_resets (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), token_hash TEXT NOT NULL UNIQUE, expires_at TEXT NOT NULL, used_at TEXT);
   CREATE TABLE IF NOT EXISTS farms (id TEXT PRIMARY KEY, organization_id TEXT NOT NULL REFERENCES organizations(id), owner_user_id TEXT NOT NULL REFERENCES users(id), country_code TEXT NOT NULL, shared_with_json TEXT NOT NULL DEFAULT '[]');
   CREATE TABLE IF NOT EXISTS contracts (id TEXT PRIMARY KEY, organization_id TEXT NOT NULL REFERENCES organizations(id), owner_user_id TEXT NOT NULL REFERENCES users(id), country_code TEXT NOT NULL);
@@ -31,6 +32,7 @@ db.exec(`
   CREATE TRIGGER IF NOT EXISTS audit_logs_no_update BEFORE UPDATE ON audit_logs BEGIN SELECT RAISE(ABORT, 'audit logs are immutable'); END;
   CREATE TRIGGER IF NOT EXISTS audit_logs_no_delete BEFORE DELETE ON audit_logs BEGIN SELECT RAISE(ABORT, 'audit logs are immutable'); END;
 `);
+
 
 const roles: Record<AppRole, string[]> = {
   farmer: ["farm:read:own", "farm:write:own", "document:read:own", "ai:use"],
@@ -76,9 +78,7 @@ export const audit = (actorUserId: string | null, action: string, resourceType: 
   db.prepare("INSERT INTO audit_logs VALUES (?, ?, ?, ?, ?, ?, ?)").run(id("audit"), new Date().toISOString(), actorUserId, action, resourceType, resourceId, JSON.stringify(metadata));
 };
 
-export function register(email: string, password: string, organizationName: string, countryCode: string) {
-  const normalizedEmail = email.trim().toLowerCase();
-  if (!/^\S+@\S+\.\S+$/.test(normalizedEmail) || password.length < 12 || !/^[A-Z]{2}$/.test(countryCode)) throw new Error("Use a valid email, a password of at least 12 characters, and a two-letter country code.");
+
   const existing = db.prepare("SELECT id FROM users WHERE email = ?").get(normalizedEmail);
   if (existing) throw new Error("An account with that email already exists.");
   const userId = id("usr"), organizationId = id("org");
@@ -86,16 +86,14 @@ export function register(email: string, password: string, organizationName: stri
   try {
     db.prepare("INSERT INTO users (id, email, password_hash, country_code, created_at) VALUES (?, ?, ?, ?, ?)").run(userId, normalizedEmail, passwordHash(password), countryCode, new Date().toISOString());
     db.prepare("INSERT INTO organizations VALUES (?, ?, ?, ?)").run(organizationId, organizationName.trim(), countryCode, new Date().toISOString());
-    db.prepare("INSERT INTO memberships (id, user_id, organization_id, role_id, delegated_consent) VALUES (?, ?, ?, 'farmer', 1)").run(id("mem"), userId, organizationId);
+
     db.exec("COMMIT");
   } catch (error) { db.exec("ROLLBACK"); throw error; }
   audit(userId, "identity.register", "user", userId, { organizationId });
   return userId;
 }
 
-function userForId(userId: string): AuthenticatedUser | null {
-  const row = db.prepare("SELECT u.id, u.email, u.country_code, m.organization_id, group_concat(DISTINCT r.name) roles, group_concat(DISTINCT p.name) permissions FROM users u JOIN memberships m ON m.user_id = u.id JOIN roles r ON r.id = m.role_id LEFT JOIN role_permissions rp ON rp.role_id = r.id LEFT JOIN permissions p ON p.id = rp.permission_id WHERE u.id = ? GROUP BY u.id, m.organization_id").get(userId) as { id: string; email: string; country_code: string; organization_id: string; roles: string; permissions: string | null } | undefined;
-  return row ? { id: row.id, email: row.email, organizationId: row.organization_id, countryCode: row.country_code, roles: row.roles.split(",") as AppRole[], permissions: row.permissions?.split(",") || [] } : null;
+
 }
 
 export function signIn(email: string, password: string, mfaCode?: string) {
@@ -103,9 +101,7 @@ export function signIn(email: string, password: string, mfaCode?: string) {
   if (!user || !passwordMatches(password, user.password_hash)) throw new Error("Invalid email or password.");
   if (user.mfa_enabled && (!mfaCode || !user.mfa_secret || ![oneTimeCode(user.mfa_secret), oneTimeCode(user.mfa_secret, Math.floor(Date.now() / 30_000) - 1)].includes(mfaCode))) throw new Error("A valid MFA code is required.");
   const token = randomBytes(32).toString("base64url"), sessionId = id("ses"), expiresAt = new Date(Date.now() + Number(process.env.SESSION_TTL_HOURS || 8) * 3_600_000).toISOString();
-  db.prepare("INSERT INTO sessions VALUES (?, ?, ?, ?, NULL, ?)").run(sessionId, user.id, hashToken(token), expiresAt, new Date().toISOString());
-  audit(user.id, "identity.sign_in", "session", sessionId);
-  return { token, expiresAt, user: userForId(user.id)! };
+
 }
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
@@ -113,10 +109,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   const bearer = req.headers.authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
   const token = bearer || cookieToken;
   if (!token) return res.status(401).json({ error: { code: "AUTH_REQUIRED", message: "Authentication is required.", requestId: res.locals.requestId } });
-  const session = db.prepare("SELECT user_id FROM sessions WHERE token_hash = ? AND revoked_at IS NULL AND expires_at > ?").get(hashToken(token), new Date().toISOString()) as { user_id: string } | undefined;
-  const user = session && userForId(session.user_id);
-  if (!user) return res.status(401).json({ error: { code: "INVALID_SESSION", message: "Your session has expired or was revoked.", requestId: res.locals.requestId } });
-  req.auth = user; next();
+
 }
 export const requireRole = (...allowed: AppRole[]) => (req: Request, res: Response, next: NextFunction) => !req.auth ? requireAuth(req, res, next) : req.auth.roles.some((role) => allowed.includes(role)) ? next() : res.status(403).json({ error: { code: "ROLE_FORBIDDEN", message: "Your role is not permitted to perform this action.", requestId: res.locals.requestId } });
 export const requireOrganizationAccess = (organizationId: string) => (req: Request, res: Response, next: NextFunction) => {
@@ -137,5 +130,4 @@ export function startPasswordReset(email: string) { const user = db.prepare("SEL
 export function completePasswordReset(token: string, password: string) { if (password.length < 12) throw new Error("Password must be at least 12 characters."); const reset = db.prepare("SELECT id, user_id FROM password_resets WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?").get(hashToken(token), new Date().toISOString()) as { id: string; user_id: string } | undefined; if (!reset) throw new Error("Password reset token is invalid or expired."); db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(passwordHash(password), reset.user_id); db.prepare("UPDATE password_resets SET used_at = ? WHERE id = ?").run(new Date().toISOString(), reset.id); db.prepare("UPDATE sessions SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL").run(new Date().toISOString(), reset.user_id); audit(reset.user_id, "identity.password_reset_completed", "user", reset.user_id); }
 export function setupMfa(userId: string) { const secret = base32Encode(randomBytes(20)); db.prepare("UPDATE users SET mfa_secret = ? WHERE id = ?").run(secret, userId); return { secret, otpauthUrl: `otpauth://totp/CULTx:${encodeURIComponent(userId)}?secret=${secret}&issuer=CULTx&algorithm=SHA1&digits=6&period=30` }; }
 export function confirmMfa(userId: string, code: string) { const row = db.prepare("SELECT mfa_secret FROM users WHERE id = ?").get(userId) as { mfa_secret: string | null }; if (!row?.mfa_secret || code !== oneTimeCode(row.mfa_secret)) throw new Error("Invalid MFA code."); db.prepare("UPDATE users SET mfa_enabled = 1 WHERE id = ?").run(userId); audit(userId, "identity.mfa_enabled", "user", userId); }
-export function revokeSessions(userId: string) { db.prepare("UPDATE sessions SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL").run(new Date().toISOString(), userId); audit(userId, "identity.logout_all", "session", null); }
-export const getCurrentUser = (id: string) => userForId(id);
+
