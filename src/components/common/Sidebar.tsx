@@ -43,13 +43,16 @@ export const Sidebar: React.FC = () => {
     { id: "trade", label: "Trade & AfCFTA Export", icon: Globe2 },
     { id: "cooperative", label: "Cooperative Hub", icon: Users2, badge: "-11% Bulk" },
     { id: "government", label: "National Food Security", icon: Landmark, isGov: true },
-  ];
+  ].filter((item) => !item.isGov || userRole === "government" || userRole === "superadmin").filter((item) => {
+    if (["farmer", "buyer", "cooperative"].includes(userRole)) return !["finance", "logistics", "trade"].includes(item.id) || userRole === "buyer";
+    return true;
+  });
 
   const adminItems = [
     { id: "admin", label: "Super Admin Control", icon: Settings },
     { id: "consent", label: "Data Sovereignty & Trust", icon: ShieldCheck },
     { id: "landing", label: "Platform Architecture", icon: Compass },
-  ];
+  ].filter((item) => item.id !== "admin" || userRole === "superadmin");
 
   return (
     <aside className="w-64 bg-[#0B1013] text-slate-300 shrink-0 flex flex-col justify-between hidden lg:flex selection:bg-emerald-600 selection:text-white">

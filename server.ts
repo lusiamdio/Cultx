@@ -3,6 +3,7 @@ import path from "path";
 import dotenv from "dotenv";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
+import { audit, completePasswordReset, confirmMfa, listAuditLogs, register, requireAuth, requireFarmAccess, requireOrganizationAccess, requireRole, revokeSession, revokeSessions, setupMfa, signIn, startPasswordReset } from "./server/auth";
 
 dotenv.config();
 
@@ -85,8 +86,36 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+const setSessionCookie = (res: express.Response, token: string, expiresAt: string) => {
+  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  res.setHeader("Set-Cookie", `cultx_session=${token}; HttpOnly; SameSite=Lax; Path=/; Expires=${new Date(expiresAt).toUTCString()}${secure}`);
+};
+
+// Public identity endpoints. All application data endpoints below require a session.
+app.post("/api/auth/register", (req, res) => {
+  const email = readString(req.body?.email, "email", 320), password = readString(req.body?.password, "password", 256), organizationName = readString(req.body?.organizationName, "organizationName", 200), countryCode = readString(req.body?.countryCode, "countryCode", 2)?.toUpperCase(), role = readString(req.body?.role, "role", 40);
+  if (!email || !password || !organizationName || !countryCode || !role) return badRequest(res, "Email, password, organization name, country code, and role are required.");
+  try { register(email, password, organizationName, countryCode, role as import("./server/auth").AppRole); return res.status(201).json({ success: true }); } catch (error) { return badRequest(res, error instanceof Error ? error.message : "Unable to create account."); }
+});
+app.post("/api/auth/sign-in", (req, res) => {
+  const email = readString(req.body?.email, "email", 320), password = readString(req.body?.password, "password", 256), mfaCode = readString(req.body?.mfaCode, "mfaCode", 10) || undefined;
+  if (!email || !password) return badRequest(res, "Email and password are required.");
+  try { const session = signIn(email, password, mfaCode); setSessionCookie(res, session.token, session.expiresAt); return res.json({ user: session.user, expiresAt: session.expiresAt }); } catch (error) { return res.status(401).json({ error: { code: "SIGN_IN_FAILED", message: error instanceof Error ? error.message : "Unable to sign in.", requestId: res.locals.requestId } }); }
+});
+app.get("/api/auth/me", requireAuth, (req, res) => res.json({ user: req.auth }));
+app.post("/api/auth/logout", requireAuth, (req, res) => { revokeSession(req.auth!.sessionId, req.auth!.id); res.setHeader("Set-Cookie", "cultx_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0"); res.status(204).end(); });
+app.post("/api/auth/logout-all", requireAuth, (req, res) => { revokeSessions(req.auth!.id); res.setHeader("Set-Cookie", "cultx_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0"); res.status(204).end(); });
+app.post("/api/auth/password-reset/request", (req, res) => { const email = readString(req.body?.email, "email", 320); if (!email) return badRequest(res, "Email is required."); const token = startPasswordReset(email); /* Send token using a transactional email provider in production; never return it. */ if (process.env.NODE_ENV !== "production" && token) console.info(`Password reset token for ${email}: ${token}`); return res.status(202).json({ success: true }); });
+app.post("/api/auth/password-reset/confirm", (req, res) => { const token = readString(req.body?.token, "token", 200), password = readString(req.body?.password, "password", 256); if (!token || !password) return badRequest(res, "Token and password are required."); try { completePasswordReset(token, password); return res.status(204).end(); } catch (error) { return badRequest(res, error instanceof Error ? error.message : "Unable to reset password."); } });
+app.post("/api/auth/mfa/setup", requireAuth, (req, res) => res.json(setupMfa(req.auth!.id)));
+app.post("/api/auth/mfa/confirm", requireAuth, (req, res) => { const code = readString(req.body?.code, "code", 10); if (!code) return badRequest(res, "MFA code is required."); try { confirmMfa(req.auth!.id, code); return res.status(204).end(); } catch (error) { return badRequest(res, error instanceof Error ? error.message : "Unable to enable MFA."); } });
+
+app.get("/api/audit-logs", requireAuth, requireRole("platform_admin"), (req, res) => { audit(req.auth!.id, "audit.read", "audit_log", null); res.json({ entries: listAuditLogs(Math.min(Number(req.query.limit) || 100, 500)) }); });
+app.get("/api/organizations/:organizationId", requireAuth, (req, res, next) => requireOrganizationAccess(req.params.organizationId)(req, res, next), (req, res) => res.json({ organizationId: req.params.organizationId }));
+app.get("/api/farms/:farmId", requireAuth, (req, res, next) => requireFarmAccess(req.params.farmId)(req, res, next), (req, res) => res.json({ farmId: req.params.farmId }));
+
 // 1. AI Agricultural Copilot Endpoint
-app.post("/api/gemini/copilot", async (req, res) => {
+app.post("/api/gemini/copilot", requireAuth, async (req, res) => {
   const query = readString(req.body?.query, "query", 4_000);
   const farmContext = req.body?.farmContext;
   const language = readString(req.body?.language || "English", "language", 80) || "English";
@@ -150,7 +179,7 @@ If the language is not English, respond in the requested language (${language}) 
 });
 
 // 2. AI Crop Doctor (Vision & Diagnostic)
-app.post("/api/gemini/crop-doctor", async (req, res) => {
+app.post("/api/gemini/crop-doctor", requireAuth, async (req, res) => {
   const imageBase64 = req.body.imageBase64 || req.body.imageData || req.body.image;
   const cropType = readString(req.body?.cropType || "Maize", "cropType", 100) || "Maize";
   const symptomsDescription = readString(req.body?.symptomsDescription || "", "symptomsDescription", 4_000) || "";
@@ -237,7 +266,7 @@ Analyze the crop image carefully and return JSON strictly with this structure:
 });
 
 // 3. Digital Contract Risk Audit
-app.post("/api/gemini/contract-audit", async (req, res) => {
+app.post("/api/gemini/contract-audit", requireAuth, requireRole("farmer", "buyer", "cooperative_admin", "platform_admin"), async (req, res) => {
   const contractDetails = req.body?.contractDetails;
   const ai = getGeminiClient();
 
@@ -309,7 +338,7 @@ Return JSON:
 });
 
 // 4. Policy Simulator
-app.post("/api/gemini/policy-simulate", async (req, res) => {
+app.post("/api/gemini/policy-simulate", requireAuth, requireRole("government_officer", "platform_admin"), async (req, res) => {
   const country = readString(req.body?.country || "Kenya", "country", 100) || "Kenya";
   const policyChange = readString(req.body?.policyChange, "policyChange", 4_000);
   const baseline = req.body?.baseline;
@@ -373,7 +402,7 @@ Return JSON:
 });
 
 // 5. Commodity Price Forecast
-app.post("/api/gemini/price-forecast", async (req, res) => {
+app.post("/api/gemini/price-forecast", requireAuth, async (req, res) => {
   const commodity = readString(req.body?.commodity || "Maize", "commodity", 100) || "Maize";
   const country = readString(req.body?.country || "South Africa", "country", 100) || "South Africa";
   const currentPrice = readString(req.body?.currentPrice || "R5,420/t", "currentPrice", 100) || "R5,420/t";
@@ -427,7 +456,7 @@ Return JSON:
 });
 
 // 6. Inventory Global Food Security & Regional Export Compliance Assessment
-app.post("/api/gemini/inventory-compliance-report", async (req, res) => {
+app.post("/api/gemini/inventory-compliance-report", requireAuth, requireRole("government_officer", "platform_admin", "cooperative_admin"), async (req, res) => {
   const inventorySummary = req.body?.inventorySummary;
   const projectedQuarters = req.body?.projectedQuarters;
   const regionalBufferThreshold = Number(req.body?.regionalBufferThreshold ?? 15);

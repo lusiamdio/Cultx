@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { AFRICAN_COUNTRIES } from "../../data/countries";
-import { UserRole } from "../../types";
 
 export const Header: React.FC<{
   onOpenNotifications?: () => void;
@@ -27,7 +26,6 @@ export const Header: React.FC<{
     selectedCountry,
     setSelectedCountry,
     userRole,
-    setUserRole,
     experienceLevel,
     setExperienceLevel,
     isOffline,
@@ -50,19 +48,7 @@ export const Header: React.FC<{
   } = useApp();
 
   const [isCountryMenuOpen, setIsCountryMenuOpen] = useState(false);
-  const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
   const [isSimulationMenuOpen, setIsSimulationMenuOpen] = useState(false);
-
-  const roles: { role: UserRole; label: string }[] = [
-    { role: "farmer", label: "Smallholder & Commercial Farmer" },
-    { role: "agribusiness", label: "Agribusiness & Aggregator" },
-    { role: "buyer", label: "Commodity Buyer & Miller" },
-    { role: "cooperative", label: "Farmers Cooperative Union" },
-    { role: "logistics", label: "Agri-Logistics & Freight" },
-    { role: "finance", label: "Agri-Financier & Insurer" },
-    { role: "government", label: "Ministry & Policy Maker" },
-    { role: "superadmin", label: "Operations Command Center" },
-  ];
 
   return (
     <header className="sticky top-0 z-40 bg-[#0B1013]/95 backdrop-blur-md border-b border-[#19262F] shadow-lg px-3 sm:px-4 lg:px-6 py-2.5 selection:bg-emerald-600 selection:text-white w-full">
@@ -349,69 +335,13 @@ export const Header: React.FC<{
             )}
           </button>
 
-          {/* Role & Persona Switcher */}
-          <div className="relative">
-            <button
-              onClick={() => setIsRoleMenuOpen(!isRoleMenuOpen)}
-              className="flex items-center gap-2 p-1.5 pl-2 sm:pl-3 rounded-xl border border-[#1D2A32] bg-[#10171B] hover:bg-[#162228] text-xs text-slate-200 transition-colors cursor-pointer min-h-[44px]"
-              id="user-profile-menu-button"
-            >
-              <div className="text-left hidden sm:block">
-                <div className="font-bold text-white leading-tight capitalize">
-                  {userRole === "farmer" ? "James Banda" : userRole === "agribusiness" ? "AfriGrain Corp" : "Min. Agriculture"}
-                </div>
-                <div className="text-[10px] text-emerald-400 font-semibold capitalize leading-none">
-                  {userRole} • {experienceLevel}
-                </div>
-              </div>
-              <div className="w-8 h-8 rounded-lg bg-[#0B3D2C] border border-[#14533C] text-white font-bold flex items-center justify-center text-xs shadow-xs">
-                {userRole === "farmer" ? "JB" : userRole === "agribusiness" ? "AG" : "GOV"}
-              </div>
-            </button>
-
-            {isRoleMenuOpen && (
-              <div className="absolute right-0 mt-2 w-68 bg-[#10171B] rounded-2xl shadow-2xl border border-[#1D2A32] py-2 z-50 animate-in fade-in">
-                <div className="px-3.5 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-[#19262F]">
-                  Switch Persona & Operating Level (Section 54)
-                </div>
-                {roles.map((r) => (
-                  <button
-                    key={r.role}
-                    onClick={() => {
-                      setUserRole(r.role);
-                      setIsRoleMenuOpen(false);
-                      if (r.role === "farmer") setCurrentView("farms");
-                      else if (r.role === "government") setCurrentView("government");
-                      else if (r.role === "agribusiness") setCurrentView("agribusiness");
-                      else if (r.role === "cooperative") setCurrentView("cooperative");
-                      else if (r.role === "superadmin") setCurrentView("admin");
-                      else if (r.role === "buyer") setCurrentView("marketplace");
-                      else if (r.role === "finance") setCurrentView("finance");
-                      else if (r.role === "logistics") setCurrentView("logistics");
-                    }}
-                    className={`w-full px-3.5 py-2.5 text-xs text-left flex items-center gap-2.5 hover:bg-[#162228] transition-colors cursor-pointer ${
-                      userRole === r.role
-                        ? "bg-[#07261B] text-emerald-300 font-bold border-l-2 border-emerald-400"
-                        : "text-slate-300"
-                    }`}
-                  >
-                    <span className="text-white font-medium">{r.label}</span>
-                  </button>
-                ))}
-                <div className="border-t border-[#19262F] mt-1 pt-1.5 px-3.5 py-1.5 flex items-center justify-between text-[11px] text-slate-400">
-                  <span>Data Sovereignty</span>
-                  <button
-                    onClick={() => {
-                      setCurrentView("consent");
-                      setIsRoleMenuOpen(false);
-                    }}
-                    className="text-emerald-400 font-semibold hover:underline cursor-pointer"
-                  >
-                    Control Sharing →
-                  </button>
-                </div>
-              </div>
-            )}
+          {/* Role is supplied by the authenticated session; it is deliberately not switchable in the UI. */}
+          <div className="flex items-center gap-2 p-1.5 pl-2 sm:pl-3 rounded-xl border border-[#1D2A32] bg-[#10171B] text-xs text-slate-200 min-h-[44px]" aria-label="Authenticated role">
+            <div className="text-left hidden sm:block">
+              <div className="font-bold text-white leading-tight">Authenticated workspace</div>
+              <div className="text-[10px] text-emerald-400 font-semibold capitalize leading-none">{userRole} • {experienceLevel}</div>
+            </div>
+            <div className="w-8 h-8 rounded-lg bg-[#0B3D2C] border border-[#14533C] text-white font-bold flex items-center justify-center text-xs shadow-xs">{userRole.slice(0, 3).toUpperCase()}</div>
           </div>
         </div>
       </div>
