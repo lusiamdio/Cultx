@@ -42,18 +42,7 @@ export const GovernmentView: React.FC = () => {
     setSimulating(true);
 
     try {
-      const { simulation } = await postJson<{ simulation?: any }>("/api/gemini/policy-simulate", {
-        policyChange: `Subsidize ${policyType} by ${subsidyPct}%. Current national smallholders: 2.4M, land: 8.7M hectares, production: 14.8M tonnes.`,
-        country: selectedCountry.name,
-      });
-      if (!simulation) throw new Error("Policy simulation returned no result");
-      setSimulationResult({
-        projectedYieldIncreasePct: String(simulation.projectedProductionChange || "0").replace("+", "").replace("%", ""),
-        fiscalCostUSD: simulation.governmentCostEstimate,
-        forexSavingsUSD: simulation.foodPriceImpact,
-        netEconomicBenefitUSD: simulation.foodSecurityIndexChange,
-        keyRecommendations: simulation.unintendedConsequences || [],
-      });
+
     } catch (err) {
       // Keep baseline response
       setSimulationResult({

@@ -46,17 +46,6 @@ const getViewFromLocation = () => {
   return VIEW_ALIASES[window.location.hash.replace(/^#\/?/, "").toLowerCase()] || "landing";
 };
 
-const SYNC_QUEUE_STORAGE_KEY = "cultx.sync-queue.v1";
-const readPersistedSyncQueue = (): SyncQueueItem[] => {
-  if (typeof window === "undefined") return [];
-  try {
-    const stored = window.localStorage.getItem(SYNC_QUEUE_STORAGE_KEY);
-    const queue = stored ? JSON.parse(stored) : [];
-    return Array.isArray(queue) ? queue.filter((item): item is SyncQueueItem => item && typeof item.id === "string" && item.status !== "synced") : [];
-  } catch {
-    return [];
-  }
-};
 
 export interface DataConsentSettings {
   shareWithFinancialInstitutions: boolean;
@@ -232,24 +221,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, []);
 
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(SYNC_QUEUE_STORAGE_KEY, JSON.stringify(syncQueue.filter((item) => item.status !== "synced")));
-    } catch {
-      // Offline work continues in memory when local storage is unavailable.
-    }
-  }, [syncQueue]);
-
-  useEffect(() => {
-    const handleOnline = () => setIsOffline(false);
-    const handleOffline = () => setIsOffline(true);
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-  }, []);
 
   // Biometric Sovereign Security
   const [isBiometricModalOpen, setIsBiometricModalOpen] = useState<boolean>(false);

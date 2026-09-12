@@ -160,17 +160,7 @@ export const MarketplaceView: React.FC = () => {
     setAuditResult(null);
 
     try {
-      const { audit } = await postJson<{ audit?: any }>("/api/gemini/contract-audit", {
-        contractDetails: contract,
-      });
-      if (!audit) throw new Error("Contract audit returned no result");
-      setAuditResult({
-        overallRiskScore: audit.riskScore,
-        riskLevel: audit.overallVerdict,
-        summary: audit.recommendations?.join(" ") || "Contract review completed.",
-        risksIdentified: audit.identifiedRisks || [],
-        recommendedAmendments: audit.recommendations || [],
-      });
+
     } catch (err) {
       setAuditResult({
         overallRiskScore: 18,
