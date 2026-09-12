@@ -46,6 +46,7 @@ const getViewFromLocation = () => {
   return VIEW_ALIASES[window.location.hash.replace(/^#\/?/, "").toLowerCase()] || "landing";
 };
 
+
 export interface DataConsentSettings {
   shareWithFinancialInstitutions: boolean;
   shareWithGovernmentPolicy: boolean;
@@ -179,8 +180,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [logisticsRoutes] = useState<LogisticsRoute[]>(LOGISTICS_ROUTES);
   const [warehouses] = useState<Warehouse[]>(INITIAL_WAREHOUSES);
 
-  const [isOffline, setIsOffline] = useState<boolean>(false);
-  const [syncQueue, setSyncQueue] = useState<SyncQueueItem[]>([]);
+  const [isOffline, setIsOffline] = useState<boolean>(() => typeof navigator !== "undefined" && !navigator.onLine);
+  const [syncQueue, setSyncQueue] = useState<SyncQueueItem[]>(readPersistedSyncQueue);
 
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
 
@@ -219,6 +220,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       window.removeEventListener("hashchange", handleHistoryNavigation);
     };
   }, []);
+
 
   // Biometric Sovereign Security
   const [isBiometricModalOpen, setIsBiometricModalOpen] = useState<boolean>(false);
@@ -261,11 +263,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const triggerManualSync = () => {
-    setSyncQueue((queue) =>
-      queue.map((item) => ({ ...item, status: "synced" }))
-    );
+    if (isOffline || typeof navigator !== "undefined" && !navigator.onLine) return;
+    setSyncQueue((queue) => queue.map((item) => ({ ...item, status: "syncing" })));
     setTimeout(() => {
-      setSyncQueue([]);
+      // Local state mutations are already applied. This marks their durable client
+      // queue as reconciled until a remote mutation service is configured.
+      setSyncQueue((queue) => queue.map((item) => ({ ...item, status: "synced" })));
+      setTimeout(() => setSyncQueue([]), 600);
     }, 2500);
   };
 

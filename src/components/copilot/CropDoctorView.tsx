@@ -25,6 +25,7 @@ import {
   Share2,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { postJson } from "../../utils/apiClient";
 
 interface SampleLeaf {
   id: string;
@@ -239,16 +240,11 @@ export const CropDoctorView: React.FC = () => {
     setDiagnosticResult(null);
 
     try {
-      const res = await fetch("/api/gemini/crop-doctor", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imageBase64: imageSrc,
-          cropType: crop,
-          symptomsDescription: notes,
-        }),
+      const data = await postJson<{ result?: any }>("/api/gemini/crop-doctor", {
+        imageBase64: imageSrc,
+        cropType: crop,
+        symptomsDescription: notes,
       });
-      const data = await res.json();
       if (data.result) {
         setDiagnosticResult(data.result);
       } else {

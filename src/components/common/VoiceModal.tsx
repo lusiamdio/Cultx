@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Mic, MicOff, Volume2, VolumeX, X, Languages, Check, RefreshCw } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { postJson } from "../../utils/apiClient";
 
 export const VoiceModal: React.FC = () => {
   const { isVoiceModalOpen, setIsVoiceModalOpen, currentFarm } = useApp();
@@ -63,24 +64,18 @@ export const VoiceModal: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/gemini/copilot", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: queryText,
-          farmContext: {
-            farmName: currentFarm.name,
-            crop: currentFarm.primaryCrop,
-            hectares: currentFarm.totalHectares,
-            healthScore: currentFarm.overallHealthScore,
-            soilMoistureField03: "28% (Critical)",
-            rainForecast72h: "32-48mm (78% probability)",
-          },
-          language: selectedLanguage,
-        }),
+      const data = await postJson<{ answer?: string }>("/api/gemini/copilot", {
+        query: queryText,
+        farmContext: {
+          farmName: currentFarm.name,
+          crop: currentFarm.primaryCrop,
+          hectares: currentFarm.totalHectares,
+          healthScore: currentFarm.overallHealthScore,
+          soilMoistureField03: "28% (Critical)",
+          rainForecast72h: "32-48mm (78% probability)",
+        },
+        language: selectedLanguage,
       });
-
-      const data = await res.json();
       if (data.answer) {
         setAiVoiceResponse(data.answer);
         speakText(data.answer);

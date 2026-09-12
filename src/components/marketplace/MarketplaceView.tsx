@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { MarketListing, PurchaseContract } from "../../types";
+import { postJson } from "../../utils/apiClient";
 
 export const MarketplaceView: React.FC = () => {
   const {
@@ -159,23 +160,7 @@ export const MarketplaceView: React.FC = () => {
     setAuditResult(null);
 
     try {
-      const res = await fetch("/api/gemini/contract-audit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contractDetails: contract,
-        }),
-      });
-      if (!res.ok) throw new Error("Contract audit request failed");
-      const { audit } = await res.json();
-      if (!audit) throw new Error("Contract audit returned no result");
-      setAuditResult({
-        overallRiskScore: audit.riskScore,
-        riskLevel: audit.overallVerdict,
-        summary: audit.recommendations?.join(" ") || "Contract review completed.",
-        risksIdentified: audit.identifiedRisks || [],
-        recommendedAmendments: audit.recommendations || [],
-      });
+
     } catch (err) {
       setAuditResult({
         overallRiskScore: 18,

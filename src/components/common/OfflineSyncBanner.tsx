@@ -29,7 +29,7 @@ export const OfflineSyncBanner: React.FC = () => {
           </span>
           {syncQueue.length > 0 && (
             <span className="px-2 py-0.5 rounded-full bg-amber-800/90 text-amber-200 font-mono font-bold text-[11px]">
-              Sync Queue: {syncQueue.length} pending
+              Sync Queue: {syncQueue.filter((item) => item.status !== "synced").length} pending
             </span>
           )}
         </div>
@@ -40,8 +40,8 @@ export const OfflineSyncBanner: React.FC = () => {
               onClick={triggerManualSync}
               className="px-2.5 py-1 rounded bg-amber-800 hover:bg-amber-700 text-white font-semibold text-[11px] flex items-center gap-1 cursor-pointer"
             >
-              <RefreshCw className="w-3 h-3 animate-spin" />
-              Sync Now
+              <RefreshCw className="w-3 h-3" />
+              {isOffline ? "Waiting for connection" : "Sync Now"}
             </button>
           )}
           <button

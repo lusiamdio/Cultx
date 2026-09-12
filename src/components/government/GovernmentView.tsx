@@ -16,6 +16,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { postJson } from "../../utils/apiClient";
 
 export const GovernmentView: React.FC = () => {
   const { selectedCountry } = useApp();
@@ -41,24 +42,7 @@ export const GovernmentView: React.FC = () => {
     setSimulating(true);
 
     try {
-      const res = await fetch("/api/gemini/policy-simulate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          policyChange: `Subsidize ${policyType} by ${subsidyPct}%. Current national smallholders: 2.4M, land: 8.7M hectares, production: 14.8M tonnes.`,
-          country: selectedCountry.name,
-        }),
-      });
-      if (!res.ok) throw new Error("Policy simulation request failed");
-      const { simulation } = await res.json();
-      if (!simulation) throw new Error("Policy simulation returned no result");
-      setSimulationResult({
-        projectedYieldIncreasePct: String(simulation.projectedProductionChange || "0").replace("+", "").replace("%", ""),
-        fiscalCostUSD: simulation.governmentCostEstimate,
-        forexSavingsUSD: simulation.foodPriceImpact,
-        netEconomicBenefitUSD: simulation.foodSecurityIndexChange,
-        keyRecommendations: simulation.unintendedConsequences || [],
-      });
+
     } catch (err) {
       // Keep baseline response
       setSimulationResult({

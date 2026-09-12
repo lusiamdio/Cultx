@@ -19,6 +19,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { QUARTERLY_DATA } from "./D3QuarterlyProjectionChart";
+import { postJson } from "../../utils/apiClient";
 
 export interface CompliancePillar {
   pillar: string;
@@ -61,26 +62,18 @@ export const AIComplianceReportModal: React.FC<AIComplianceReportModalProps> = (
   const fetchReport = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/gemini/inventory-compliance-report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          inventorySummary: {
-            totalFertilizerStockMT: 1250,
-            totalSeedStockMT: 780,
-            outgrowerContractedMT: 1300,
-            activeDepletionRate: "Peak Basal Application",
-          },
-          projectedQuarters: QUARTERLY_DATA,
-          regionalBufferThreshold: 15,
-        }),
+      const data = await postJson<{ report?: ComplianceReportData }>("/api/gemini/inventory-compliance-report", {
+        inventorySummary: {
+          totalFertilizerStockMT: 1250,
+          totalSeedStockMT: 780,
+          outgrowerContractedMT: 1300,
+          activeDepletionRate: "Peak Basal Application",
+        },
+        projectedQuarters: QUARTERLY_DATA,
+        regionalBufferThreshold: 15,
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.report) {
-          setReport(data.report);
-        }
+      if (data.report) {
+        setReport(data.report);
       }
     } catch (e) {
       console.warn("Failed to generate AI report via backend, using local model fallback:", e);

@@ -266,9 +266,19 @@ export const LogisticsView: React.FC = () => {
               {/* Ndola / Copperbelt Grain Terminal */}
               <g
                 className="cursor-pointer"
+                role="button"
+                tabIndex={0}
+                aria-label="Select Ndola Agri-Silo route"
                 onClick={() => {
                   const r = logisticsRoutes.find((x) => x.id === "route-04") || logisticsRoutes[0];
                   setSelectedRoute(r);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    const r = logisticsRoutes.find((x) => x.id === "route-04") || logisticsRoutes[0];
+                    setSelectedRoute(r);
+                  }
                 }}
               >
                 <circle cx="290" cy="238" r="6" fill="#10B981" stroke="#A7F3D0" strokeWidth="1.5" />
@@ -293,9 +303,19 @@ export const LogisticsView: React.FC = () => {
               {/* Train 1: LAR 540 MT Grain Train */}
               <g
                 className="cursor-pointer"
+                role="button"
+                tabIndex={0}
+                aria-label="Select TRK-AO-5520 grain train"
                 onClick={() => {
                   const r = logisticsRoutes.find((x) => x.id === "route-04") || logisticsRoutes[0];
                   setSelectedRoute(r);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    const r = logisticsRoutes.find((x) => x.id === "route-04") || logisticsRoutes[0];
+                    setSelectedRoute(r);
+                  }
                 }}
               >
                 <circle cx="175" cy="241" r="7" fill="#06B6D4" className="animate-ping" />
@@ -308,9 +328,19 @@ export const LogisticsView: React.FC = () => {
               {/* Train 2: DAP Fertilizer Train */}
               <g
                 className="cursor-pointer"
+                role="button"
+                tabIndex={0}
+                aria-label="Select TRK-AO-5531 fertilizer train"
                 onClick={() => {
                   const r = logisticsRoutes.find((x) => x.id === "route-05") || logisticsRoutes[0];
                   setSelectedRoute(r);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    const r = logisticsRoutes.find((x) => x.id === "route-05") || logisticsRoutes[0];
+                    setSelectedRoute(r);
+                  }
                 }}
               >
                 <circle cx="130" cy="241" r="5" fill="#10B981" className="animate-ping" />
