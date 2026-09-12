@@ -301,7 +301,7 @@ export const LogisticsView: React.FC = () => {
                 <circle cx="175" cy="241" r="7" fill="#06B6D4" className="animate-ping" />
                 <rect x="170" y="236" width="10" height="10" rx="2" fill="#0891B2" stroke="#FFFFFF" strokeWidth="1.5" />
                 <text x="145" y="262" fontSize="8.5" fill="#22D3EE" fontWeight="bold">
-                  🚆 TRK-AO-5520 (LAR 540 MT)
+                  TRK-AO-5520 (LAR 540 MT)
                 </text>
               </g>
 
@@ -316,7 +316,7 @@ export const LogisticsView: React.FC = () => {
                 <circle cx="130" cy="241" r="5" fill="#10B981" className="animate-ping" />
                 <rect x="126" y="237" width="8" height="8" rx="2" fill="#059669" stroke="#A7F3D0" strokeWidth="1" />
                 <text x="110" y="222" fontSize="8" fill="#34D399" fontWeight="bold">
-                  🚆 TRK-AO-5531 (DAP 320 MT)
+                  TRK-AO-5531 (DAP 320 MT)
                 </text>
               </g>
             </svg>
@@ -440,7 +440,7 @@ export const LogisticsView: React.FC = () => {
           </div>
 
           <div className="pt-4">
-            <button className="w-full py-2.5 rounded-xl bg-[#0B3D2C] hover:bg-[#0E4B37] text-white font-bold text-xs cursor-pointer shadow-xs transition-colors flex items-center justify-center gap-2 border border-[#196349] min-h-[42px]">
+            <button onClick={() => window.print()} className="w-full py-2.5 rounded-xl bg-[#0B3D2C] hover:bg-[#0E4B37] text-white font-bold text-xs cursor-pointer shadow-xs transition-colors flex items-center justify-center gap-2 border border-[#196349] min-h-[42px]">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
               <span>Download Cold Chain Certificate</span>
             </button>

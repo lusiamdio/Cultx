@@ -906,9 +906,9 @@ export const DocumentRepository: React.FC = () => {
                   </div>
 
                   <div className="p-3 bg-[#162228] border border-[#1D2A32] rounded-xl text-[11px] text-slate-400 space-y-1">
-                    <div>🔒 <strong>Permissions:</strong> Read-only certified verification manifest</div>
+                    <div><strong>Permissions:</strong> Read-only certified verification manifest</div>
                     <div>⏱️ <strong>Access Duration:</strong> 30 calendar days (auto-revocable)</div>
-                    <div>🛡️ <strong>Encryption:</strong> Recipient public key handshake</div>
+                    <div><strong>Encryption:</strong> Recipient public key handshake</div>
                   </div>
 
                   <div className="pt-2 flex items-center justify-end gap-2.5">

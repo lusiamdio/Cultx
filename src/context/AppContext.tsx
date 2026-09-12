@@ -33,6 +33,19 @@ import {
   INITIAL_SOIL_ALERTS,
 } from "../data/mockData";
 
+const VIEW_ALIASES: Record<string, string> = {
+  landing: "landing", dashboard: "dashboard", home: "home", farms: "farms", farmer: "farmer", farmers: "farmers",
+  "farm-twin": "farm-twin", farm_twin: "farm_twin", precision: "precision", precision_ag: "precision_ag",
+  "crop-doctor": "crop-doctor", crop_doctor: "crop_doctor", marketplace: "marketplace", finance: "finance",
+  logistics: "logistics", climate: "climate", trade: "trade", government: "government", cooperative: "cooperative",
+  agribusiness: "agribusiness", consent: "consent", admin: "admin",
+};
+
+const getViewFromLocation = () => {
+  if (typeof window === "undefined") return "landing";
+  return VIEW_ALIASES[window.location.hash.replace(/^#\/?/, "").toLowerCase()] || "landing";
+};
+
 export interface DataConsentSettings {
   shareWithFinancialInstitutions: boolean;
   shareWithGovernmentPolicy: boolean;
@@ -142,7 +155,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentView, setCurrentView] = useState<string>("landing");
+  const [currentView, setCurrentViewState] = useState<string>(getViewFromLocation);
   const [userRole, setUserRole] = useState<UserRole>("farmer");
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>("simple");
   const [selectedCountry, setSelectedCountry] = useState<CountryConfig>(AFRICAN_COUNTRIES[0]); // South Africa
@@ -187,6 +200,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState<boolean>(false);
   const [isMenuHidden, setIsMenuHidden] = useState<boolean>(false);
   const toggleMenu = () => setIsMenuHidden((prev) => !prev);
+
+  // Keep views addressable and make browser history match in-product navigation.
+  const setCurrentView = (view: string) => {
+    const nextView = VIEW_ALIASES[view] || "dashboard";
+    setCurrentViewState(nextView);
+    if (typeof window !== "undefined" && window.location.hash !== `#${nextView}`) {
+      window.history.pushState({ view: nextView }, "", `#${nextView}`);
+    }
+  };
+
+  useEffect(() => {
+    const handleHistoryNavigation = () => setCurrentViewState(getViewFromLocation());
+    window.addEventListener("popstate", handleHistoryNavigation);
+    window.addEventListener("hashchange", handleHistoryNavigation);
+    return () => {
+      window.removeEventListener("popstate", handleHistoryNavigation);
+      window.removeEventListener("hashchange", handleHistoryNavigation);
+    };
+  }, []);
 
   // Biometric Sovereign Security
   const [isBiometricModalOpen, setIsBiometricModalOpen] = useState<boolean>(false);

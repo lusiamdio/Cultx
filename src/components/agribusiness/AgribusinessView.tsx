@@ -303,7 +303,7 @@ export const AgribusinessView: React.FC = () => {
                       </td>
                       <td className="py-3.5 text-slate-400 font-mono">{s.deliveryDate}</td>
                       <td className="py-3.5 text-right">
-                        <button className="text-[#22C55E] font-bold hover:underline cursor-pointer min-h-[36px] px-2">
+                        <button onClick={() => setActiveTab("procurement")} className="text-[#22C55E] font-bold hover:underline cursor-pointer min-h-[36px] px-2">
                           Inspect Twin →
                         </button>
                       </td>
