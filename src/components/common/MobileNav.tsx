@@ -15,9 +15,10 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { canAccessView } from "../../auth/access";
 
 export const MobileNav: React.FC = () => {
-  const { currentView, setCurrentView, setIsCopilotOpen, setIsCropDoctorOpen } = useApp();
+  const { currentView, setCurrentView, setIsCopilotOpen, setIsCropDoctorOpen, userRole } = useApp();
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
   return (
@@ -43,7 +44,7 @@ export const MobileNav: React.FC = () => {
               </button>
             </div>
             <div className="grid grid-cols-2 gap-2.5 mt-4 text-xs font-medium">
-              <button
+              {canAccessView(userRole, "crop_doctor") && <button
                 onClick={() => {
                   setCurrentView("crop_doctor");
                   setIsMoreMenuOpen(false);
@@ -54,8 +55,8 @@ export const MobileNav: React.FC = () => {
                   <Stethoscope className="w-4 h-4 text-emerald-400" />
                 </div>
                 <span>Crop Doctor</span>
-              </button>
-              <button
+              </button>}
+              {canAccessView(userRole, "climate") && <button
                 onClick={() => {
                   setCurrentView("climate");
                   setIsMoreMenuOpen(false);
@@ -66,8 +67,8 @@ export const MobileNav: React.FC = () => {
                   <CloudSunRain className="w-4 h-4 text-emerald-400" />
                 </div>
                 <span>Climate Intel</span>
-              </button>
-              <button
+              </button>}
+              {canAccessView(userRole, "finance") && <button
                 onClick={() => {
                   setCurrentView("finance");
                   setIsMoreMenuOpen(false);
@@ -78,8 +79,8 @@ export const MobileNav: React.FC = () => {
                   <Coins className="w-4 h-4 text-emerald-400" />
                 </div>
                 <span>Agri-Finance</span>
-              </button>
-              <button
+              </button>}
+              {canAccessView(userRole, "logistics") && <button
                 onClick={() => {
                   setCurrentView("logistics");
                   setIsMoreMenuOpen(false);
@@ -90,8 +91,8 @@ export const MobileNav: React.FC = () => {
                   <Truck className="w-4 h-4 text-emerald-400" />
                 </div>
                 <span>Logistics & Silos</span>
-              </button>
-              <button
+              </button>}
+              {canAccessView(userRole, "trade") && <button
                 onClick={() => {
                   setCurrentView("trade");
                   setIsMoreMenuOpen(false);
@@ -102,8 +103,8 @@ export const MobileNav: React.FC = () => {
                   <Globe2 className="w-4 h-4 text-emerald-400" />
                 </div>
                 <span>AfCFTA Trade</span>
-              </button>
-              <button
+              </button>}
+              {canAccessView(userRole, "government") && <button
                 onClick={() => {
                   setCurrentView("government");
                   setIsMoreMenuOpen(false);
@@ -114,8 +115,8 @@ export const MobileNav: React.FC = () => {
                   <Landmark className="w-4 h-4 text-emerald-400" />
                 </div>
                 <span>Gov Policy</span>
-              </button>
-              <button
+              </button>}
+              {canAccessView(userRole, "consent") && <button
                 onClick={() => {
                   setCurrentView("consent");
                   setIsMoreMenuOpen(false);
@@ -124,7 +125,7 @@ export const MobileNav: React.FC = () => {
               >
                 <ShieldCheck className="w-5 h-5 text-emerald-400" />
                 <span className="font-bold text-white">Data Sovereignty & Privacy Controls</span>
-              </button>
+              </button>}
             </div>
           </div>
         </div>
@@ -143,7 +144,7 @@ export const MobileNav: React.FC = () => {
             <span>Home</span>
           </button>
 
-          <button
+          {canAccessView(userRole, "farms") && <button
             onClick={() => setCurrentView("farms")}
             className={`flex flex-col items-center gap-1 py-1.5 px-3 text-[10px] font-semibold transition-colors min-h-[44px] justify-center cursor-pointer ${
               currentView === "farms" ? "text-white font-bold" : "text-slate-400"
@@ -151,7 +152,7 @@ export const MobileNav: React.FC = () => {
           >
             <Sprout className={`w-5 h-5 ${currentView === "farms" ? "text-emerald-400" : "text-slate-400"}`} />
             <span>Farms</span>
-          </button>
+          </button>}
 
           {/* Prominent Center Copilot Button */}
           <button
@@ -165,7 +166,7 @@ export const MobileNav: React.FC = () => {
             <span className="text-[10px] font-bold text-white mt-1">Assistant</span>
           </button>
 
-          <button
+          {canAccessView(userRole, "marketplace") && <button
             onClick={() => setCurrentView("marketplace")}
             className={`flex flex-col items-center gap-1 py-1.5 px-3 text-[10px] font-semibold transition-colors min-h-[44px] justify-center cursor-pointer ${
               currentView === "marketplace" ? "text-white font-bold" : "text-slate-400"
@@ -173,7 +174,7 @@ export const MobileNav: React.FC = () => {
           >
             <ShoppingBag className={`w-5 h-5 ${currentView === "marketplace" ? "text-emerald-400" : "text-slate-400"}`} />
             <span>Market</span>
-          </button>
+          </button>}
 
           <button
             onClick={() => setIsMoreMenuOpen(true)}

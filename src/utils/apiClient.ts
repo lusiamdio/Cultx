@@ -32,6 +32,7 @@ export async function postJson<TResponse>(
     const data: TResponse & ApiErrorResponse = await response.json().catch(() => ({} as TResponse & ApiErrorResponse));
 
     if (!response.ok) {
+      if (response.status === 401) window.dispatchEvent(new Event("cultx:session-expired"));
       throw new ApiRequestError(
         data.error?.message || "The service could not complete this request.",
         response.status,

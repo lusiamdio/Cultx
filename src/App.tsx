@@ -34,6 +34,7 @@ import { CropDoctorView } from "./components/copilot/CropDoctorView";
 import { FloatingAICopilot } from "./components/copilot/FloatingAICopilot";
 import { WebsiteFooter } from "./components/common/WebsiteFooter";
 import { BiometricAuthModal } from "./components/common/BiometricAuthModal";
+import { canAccessView } from "./auth/access";
 
 const AppContent: React.FC = () => {
   const {
@@ -48,13 +49,8 @@ const AppContent: React.FC = () => {
     userRole,
   } = useApp();
 
-  const allowedViews: Record<string, string[]> = {
-    government: ["government", "superadmin"], admin: ["superadmin"], cooperative: ["cooperative"], agribusiness: ["agribusiness"],
-    finance: ["finance", "agribusiness"], logistics: ["logistics", "agribusiness"], marketplace: ["farmer", "buyer", "agribusiness", "cooperative"],
-  };
-
   const renderActiveView = () => {
-    if (allowedViews[currentView] && !allowedViews[currentView].includes(userRole)) {
+    if (!canAccessView(userRole, currentView)) {
       return <section className="rounded-2xl border border-[#1D2A32] bg-[#10171B] p-8 text-center"><h1 className="text-xl font-bold">Unauthorized</h1><p className="mt-2 text-slate-400">Your authenticated role is not allowed to open this workspace.</p></section>;
     }
     switch (currentView) {
@@ -194,6 +190,7 @@ const SignIn: React.FC<{ onAuthenticated: (user: SessionUser) => void }> = ({ on
 export default function App() {
   const [user, setUser] = useState<SessionUser | null>(null); const [checked, setChecked] = useState(false);
   useEffect(() => { fetch("/api/auth/me", { credentials: "same-origin" }).then((response) => response.ok ? response.json() : null).then((data) => setUser(data?.user || null)).finally(() => setChecked(true)); }, []);
+  useEffect(() => { const clearSession = () => setUser(null); window.addEventListener("cultx:session-expired", clearSession); return () => window.removeEventListener("cultx:session-expired", clearSession); }, []);
   if (!checked) return <main className="min-h-screen bg-[#090D0F] text-slate-300 grid place-items-center">Checking secure session…</main>;
   if (!user) return <SignIn onAuthenticated={setUser} />;
   const initialRole = roleToUiRole[user.roles[0]] || "farmer";
