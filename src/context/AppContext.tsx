@@ -46,6 +46,16 @@ const getViewFromLocation = () => {
   return VIEW_ALIASES[window.location.hash.replace(/^#\/?/, "").toLowerCase()] || "landing";
 };
 
+const readPersistedSyncQueue = (): SyncQueueItem[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const value = window.localStorage.getItem("cultx-sync-queue");
+    return value ? JSON.parse(value) : [];
+  } catch {
+    return [];
+  }
+};
+
 
 export interface DataConsentSettings {
   shareWithFinancialInstitutions: boolean;
@@ -155,9 +165,10 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AppProvider: React.FC<{ children: React.ReactNode; initialRole?: UserRole }> = ({ children, initialRole = "farmer" }) => {
   const [currentView, setCurrentViewState] = useState<string>(getViewFromLocation);
-  const [userRole, setUserRole] = useState<UserRole>("farmer");
+  // The role originates from the authenticated server session. UI controls never grant access.
+  const [userRole, setUserRole] = useState<UserRole>(initialRole);
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>("simple");
   const [selectedCountry, setSelectedCountry] = useState<CountryConfig>(AFRICAN_COUNTRIES[0]); // South Africa
 
