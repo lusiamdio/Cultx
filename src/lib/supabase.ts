@@ -76,6 +76,7 @@ export const supabase = {
     const rows = await response.json() as Array<{ role: string }>;
     return rows[0] || null;
   },
+
   subscribeToNotifications(userId: string, onInsert: (record: unknown) => void) {
     const token = readSession()?.access_token;
     if (!token) return () => undefined;

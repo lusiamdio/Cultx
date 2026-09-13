@@ -18,21 +18,7 @@ import {
   SensorTelemetryAlert,
 } from "../types";
 import { AFRICAN_COUNTRIES } from "../data/countries";
-import {
-  INITIAL_FARMS,
-  INITIAL_AI_RECOMMENDATIONS,
-  PAN_AFRICAN_COMMODITY_PRICES,
-  INITIAL_MARKET_LISTINGS,
-  INITIAL_PURCHASE_CONTRACTS,
-  FINANCING_PRODUCTS,
-  LOGISTICS_ROUTES,
-  INITIAL_WAREHOUSES,
-  INITIAL_NOTIFICATIONS,
-  INITIAL_FARMER_DOCUMENTS,
-  INITIAL_SOIL_NODES,
-  INITIAL_SOIL_ALERTS,
-} from "../data/mockData";
-import { supabase } from "../lib/supabase";
+
 
 const VIEW_ALIASES: Record<string, string> = {
   landing: "landing", dashboard: "dashboard", home: "home", farms: "farms", farmer: "farmer", farmers: "farmers",
@@ -173,24 +159,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialRole?: Us
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>("simple");
   const [selectedCountry, setSelectedCountry] = useState<CountryConfig>(AFRICAN_COUNTRIES[0]); // South Africa
 
-  const [farms, setFarms] = useState<Farm[]>(INITIAL_FARMS);
-  const [currentFarm, setCurrentFarm] = useState<Farm>(INITIAL_FARMS[0]);
-  const [recommendations, setRecommendations] = useState<AIRecommendation[]>(INITIAL_AI_RECOMMENDATIONS);
+  const [farms, setFarms] = useState<Farm[]>([]);
+  const [currentFarm, setCurrentFarm] = useState<Farm>(EMPTY_FARM);
+  const [recommendations, setRecommendations] = useState<AIRecommendation[]>([]);
 
-  const [commodityPrices] = useState<CommodityPrice[]>(PAN_AFRICAN_COMMODITY_PRICES);
-  const [marketListings, setMarketListings] = useState<MarketListing[]>(INITIAL_MARKET_LISTINGS);
-  const [purchaseContracts, setPurchaseContracts] = useState<PurchaseContract[]>(INITIAL_PURCHASE_CONTRACTS);
+  const [commodityPrices, setCommodityPrices] = useState<CommodityPrice[]>([]);
+  const [marketListings, setMarketListings] = useState<MarketListing[]>([]);
+  const [purchaseContracts, setPurchaseContracts] = useState<PurchaseContract[]>([]);
 
   // Digital Document Repository State
-  const [farmerDocuments, setFarmerDocuments] = useState<FarmerDocument[]>(INITIAL_FARMER_DOCUMENTS);
+  const [farmerDocuments, setFarmerDocuments] = useState<FarmerDocument[]>([]);
 
   // Soil Sensor Telemetry State
-  const [soilSensorNodes, setSoilSensorNodes] = useState<SoilSensorNode[]>(INITIAL_SOIL_NODES);
-  const [soilAlerts, setSoilAlerts] = useState<SensorTelemetryAlert[]>(INITIAL_SOIL_ALERTS);
+  const [soilSensorNodes, setSoilSensorNodes] = useState<SoilSensorNode[]>([]);
+  const [soilAlerts, setSoilAlerts] = useState<SensorTelemetryAlert[]>([]);
 
-  const [financingProducts] = useState<FinancingProduct[]>(FINANCING_PRODUCTS);
-  const [logisticsRoutes] = useState<LogisticsRoute[]>(LOGISTICS_ROUTES);
-  const [warehouses] = useState<Warehouse[]>(INITIAL_WAREHOUSES);
+  const [financingProducts] = useState<FinancingProduct[]>([]);
+  const [logisticsRoutes] = useState<LogisticsRoute[]>([]);
+  const [warehouses] = useState<Warehouse[]>([]);
 
   const [isOffline, setIsOffline] = useState<boolean>(() => typeof navigator !== "undefined" && !navigator.onLine);
   const [syncQueue, setSyncQueue] = useState<SyncQueueItem[]>(readPersistedSyncQueue);
@@ -204,7 +190,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialRole?: Us
     }
   }, [syncQueue]);
 
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [workspaceReady, setWorkspaceReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    supabase.getWorkspace().then((workspace) => {
+      if (!active || !workspace) return;
+      const data = workspace as Partial<{ farms: Farm[]; recommendations: AIRecommendation[]; commodityPrices: CommodityPrice[]; marketListings: MarketListing[]; purchaseContracts: PurchaseContract[]; farmerDocuments: FarmerDocument[]; soilSensorNodes: SoilSensorNode[]; soilAlerts: SensorTelemetryAlert[]; notifications: NotificationItem[] }>;
+      if (data.farms) { setFarms(data.farms); setCurrentFarm(data.farms[0] || EMPTY_FARM); }
+      if (data.recommendations) setRecommendations(data.recommendations);
+      if (data.commodityPrices) setCommodityPrices(data.commodityPrices);
+      if (data.marketListings) setMarketListings(data.marketListings);
+      if (data.purchaseContracts) setPurchaseContracts(data.purchaseContracts);
+      if (data.farmerDocuments) setFarmerDocuments(data.farmerDocuments);
+      if (data.soilSensorNodes) setSoilSensorNodes(data.soilSensorNodes);
+      if (data.soilAlerts) setSoilAlerts(data.soilAlerts);
+      if (data.notifications) setNotifications(data.notifications);
+    }).finally(() => active && setWorkspaceReady(true));
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!workspaceReady) return;
+    const save = window.setTimeout(() => {
+      supabase.saveWorkspace({ farms, recommendations, commodityPrices, marketListings, purchaseContracts, farmerDocuments, soilSensorNodes, soilAlerts, notifications }).catch((error) => console.error("Workspace sync failed", error));
+    }, 500);
+    return () => window.clearTimeout(save);
+  }, [workspaceReady, farms, recommendations, commodityPrices, marketListings, purchaseContracts, farmerDocuments, soilSensorNodes, soilAlerts, notifications]);
+
+  useEffect(() => {
+    const userId = supabase.getSession()?.user.id;
+    if (!userId) return;
+    return supabase.subscribeToNotifications(userId, (record) => {
+      const notification = record as { id: string; type: NotificationItem["type"]; title: string; message: string; action_label?: string; target_view?: string; read: boolean; created_at: string };
+      setNotifications((previous) => [{ id: notification.id, type: notification.type, title: notification.title, message: notification.message, actionLabel: notification.action_label, targetView: notification.target_view, read: notification.read, timestamp: new Date(notification.created_at).toLocaleTimeString() }, ...previous]);
+    });
+  }, []);
 
   useEffect(() => {
     const userId = supabase.getSession()?.user.id;

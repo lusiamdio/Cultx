@@ -132,26 +132,7 @@ If the language is not English, respond in the requested language (${language}) 
     }
   }
 
-  // Domain-grounded fallback response
-  const fallbacks: Record<string, string> = {
-    irrigation: `**Irrigation Recommendation for Field 03 (Maize)**\n\n- **Soil Status**: Moisture sensor indicates 28% (field capacity benchmark: 45-60%).\n- **Action**: Apply 18-22 mm of center-pivot or drip irrigation within the next 8 hours to avoid vegetative stunting.\n- **Weather Correlation**: Satellite radar detects 78% probability of 34mm rainfall in 72 hours; cap irrigation now to preserve groundwater and prevent runoff.`,
-    fertilizer: `**Nutrient & Fertilizer Advisory**\n\n- **Crop Phase**: V6 (Knee-high vegetative maize).\n- **Diagnosis**: Slight pale chlorosis in lower canopy indicates mild nitrogen deficiency.\n- **Action**: Top-dress with Calcium Ammonium Nitrate (CAN) at 80 kg/ha or Urea at 50 kg/ha prior to expected rainfall.\n- **Precaution**: Delay broadcasting until 24 hours before steady rain to minimize volatilization losses.`,
-    buyers: `**Market Intelligence & Buyer Matching**\n\n- **Active Demand**: 14 verified off-takers are actively sourcing Grade-A yellow and white maize in your corridor.\n- **Spot Price**: R5,420 / MT (SAFEX benchmark, +6.8% 30-day regional outlook).\n- **Top Buyer**: Zambezi Grain Silos (Need: 500 MT, Delivery: 14 days, Terms: Escrow on dispatch).`,
-  };
-
-  const lower = query.toLowerCase();
-  let selected = fallbacks.irrigation;
-  if (lower.includes("fertiliz") || lower.includes("nitrogen") || lower.includes("yellow") || lower.includes("soil")) {
-    selected = fallbacks.fertilizer;
-  } else if (lower.includes("buyer") || lower.includes("market") || lower.includes("price") || lower.includes("sell")) {
-    selected = fallbacks.buyers;
-  }
-
-  return res.json({
-    success: true,
-    answer: selected,
-    source: "agriintel-heuristic-engine",
-  });
+  return res.status(503).json({ error: { code: "AI_UNAVAILABLE", message: "The advisory service is unavailable. No generated advisory has been substituted.", requestId: res.locals.requestId } } satisfies ApiErrorBody);
 });
 
 // 2. AI Crop Doctor (Vision & Diagnostic)
@@ -209,40 +190,11 @@ Analyze the crop image carefully and return JSON strictly with this structure:
     }
   }
 
-  // Fallback high-fidelity diagnostic
-  return res.json({
-    success: true,
-    result: {
-      diseaseName: cropType === "Maize" ? "Northern Corn Leaf Blight (Exserohilum turcicum)" : "Common Leaf Rust",
-      pathogenType: "Fungal",
-      confidence: 91,
-      severity: "Moderate",
-      symptoms: [
-        "Elongated grayish-green to tan elliptical lesions on foliage",
-        "Lesions coalescing into significant foliar necrosis",
-        "Premature plant senescence affecting grain filling",
-      ],
-      recommendedActions: [
-        "Inspect perimeter fields (Field 02 and Field 04) to quantify infected canopy surface area",
-        "Apply registered strobilurin or triazole-based fungicide (e.g. Azoxystrobin + Difenoconazole) if canopy disease incidence > 15%",
-        "Sanitize spray equipment before entering clean acreage",
-      ],
-      organicAlternatives: [
-        "Spray diluted neem oil emulsion (5ml/L) or copper oxychloride solution during early onset",
-        "Improve airflow by clearing border weed hosts",
-      ],
-      preventativeMeasures: [
-        "Adopt certified resistant hybrid seed (e.g. SC719 or PAN 53) for upcoming cycle",
-        "Implement minimum 1-year rotation with legumes (Cowpea/Soybean) to break fungal spores",
-      ],
-      professionalDisclaimer: "This AI diagnostic provides advisory intelligence. Consult an agricultural extension professional before applying chemical treatments.",
-    },
-    source: "agriintel-diagnostic-model",
-  });
+  return res.status(503).json({ error: { code: "AI_UNAVAILABLE", message: "The diagnostic service is unavailable. Upload data was not replaced with a generated result.", requestId: res.locals.requestId } } satisfies ApiErrorBody);
 });
 
 // 3. Digital Contract Risk Audit
-app.post("/api/gemini/contract-audit", requireAuth, requireRole("farmer", "buyer", "cooperative_admin", "platform_admin"), async (req, res) => {
+app.post("/api/gemini/contract-audit", requireAuth, requireRole("farmer", "buyer", "cooperative", "superadmin"), async (req, res) => {
   const contractDetails = req.body?.contractDetails;
   const ai = getGeminiClient();
 
@@ -279,42 +231,11 @@ Return JSON:
     }
   }
 
-  // Fallback audit
-  return res.json({
-    success: true,
-    audit: {
-      riskScore: 28,
-      overallVerdict: "Moderate Risk",
-      identifiedRisks: [
-        {
-          title: "Payment Terms Delay",
-          severity: "Medium",
-          description: "Net-30 payment without escrow deposit exposes producer to liquidity shortfall during post-harvest handling.",
-          remedy: "Mandate a 25% digital escrow pre-funding upon commodity weigh-bridge check.",
-        },
-        {
-          title: "Moisture Content Ambiguity",
-          severity: "High",
-          description: "Contract specifies 'Standard Quality' without defining strict maximum moisture limit (SAFEX max 12.5%).",
-          remedy: "Specify grade certification standard (e.g., Aflatoxin < 10ppb, Moisture <= 12.5%).",
-        },
-        {
-          title: "Logistics Force Majeure",
-          severity: "Low",
-          description: "Border crossing clearance delays along the Beira corridor lack explicit delivery window buffers.",
-          remedy: "Include standard SADC 5-day customs clearance grace period.",
-        },
-      ],
-      recommendations: [
-        "Attach digital inspection certificate requirement from SGS or Bureau Veritas",
-        "Enable AgriIntel Escrow to lock buyer funds before dispatch",
-      ],
-    },
-  });
+  return res.status(503).json({ error: { code: "AI_UNAVAILABLE", message: "The contract audit service is unavailable. No generated audit has been substituted.", requestId: res.locals.requestId } } satisfies ApiErrorBody);
 });
 
 // 4. Policy Simulator
-app.post("/api/gemini/policy-simulate", requireAuth, requireRole("government_officer", "platform_admin"), async (req, res) => {
+app.post("/api/gemini/policy-simulate", requireAuth, requireRole("government", "superadmin"), async (req, res) => {
   const country = readString(req.body?.country || "Kenya", "country", 100) || "Kenya";
   const policyChange = readString(req.body?.policyChange, "policyChange", 4_000);
   const baseline = req.body?.baseline;
@@ -357,24 +278,7 @@ Return JSON:
     }
   }
 
-  // Fallback simulation
-  return res.json({
-    success: true,
-    simulation: {
-      projectedProductionChange: "+8.4%",
-      farmerIncomeChange: "+6.2%",
-      governmentCostEstimate: "$18.5M USD (equivalent to 1.2% agricultural fiscal budget)",
-      foodPriceImpact: "-3.1% in consumer staples",
-      foodSecurityIndexChange: "+4.8 points (from 74.2 to 79.0)",
-      regionalBeneficiaries: "485,000 smallholder farm households",
-      unintendedConsequences: [
-        "Risk of cross-border grain arbitrage into neighboring higher-tariff territories",
-        "Potential soil acidification if single-nutrient urea is prioritized over balanced NPK+Lime",
-      ],
-      aiAnalysis:
-        "The targeted 15% fertilizer subsidy model accelerates input adoption among smallholders by lowering barriers during initial planting. When coupled with soil testing vouchers, production gains compound sustainably with minimal deadweight loss.",
-    },
-  });
+  return res.status(503).json({ error: { code: "AI_UNAVAILABLE", message: "The policy service is unavailable. No generated simulation has been substituted.", requestId: res.locals.requestId } } satisfies ApiErrorBody);
 });
 
 // 5. Commodity Price Forecast
@@ -412,27 +316,11 @@ Return JSON:
     }
   }
 
-  return res.json({
-    success: true,
-    forecast: {
-      forecastPercentage: "+6.8%",
-      forecastPrice: "R5,788/t",
-      confidenceScore: 89,
-      trend: "BULLISH",
-      primaryDrivers: [
-        "Regional inventory tightening across Southern & East Africa",
-        "Export demand surges from MENA milling consortiums",
-        "Higher transport fuel tariffs impacting inland port transport costs",
-      ],
-      marketAnalysis:
-        "Demand is projected to outpace supply over the next 30 days due to delayed harvest in neighboring basins. Southern African regional stocks are at an 18-month low, providing strong upward price pressure.",
-      recommendedAction: "Hold 60% of harvested stock in certified warehouse receipt facilities; forward-contract remaining 40% at R5,720+.",
-    },
-  });
+  return res.status(503).json({ error: { code: "AI_UNAVAILABLE", message: "The market forecasting service is unavailable. No generated forecast has been substituted.", requestId: res.locals.requestId } } satisfies ApiErrorBody);
 });
 
 // 6. Inventory Global Food Security & Regional Export Compliance Assessment
-app.post("/api/gemini/inventory-compliance-report", requireAuth, requireRole("government_officer", "platform_admin", "cooperative_admin"), async (req, res) => {
+app.post("/api/gemini/inventory-compliance-report", requireAuth, requireRole("government", "superadmin", "cooperative"), async (req, res) => {
   const inventorySummary = req.body?.inventorySummary;
   const projectedQuarters = req.body?.projectedQuarters;
   const regionalBufferThreshold = Number(req.body?.regionalBufferThreshold ?? 15);
@@ -523,76 +411,7 @@ Provide a rigorous, authoritative audit report strictly in JSON:
     }
   }
 
-  // Domain-grounded fallback compliance report
-  return res.json({
-    success: true,
-    report: {
-      reportTitle: "Global Food Security & Regional Export Inventory Compliance Assessment",
-      executiveSummary:
-        "The agribusiness hub achieves 91% alignment with Codex Alimentarius and ISTA hybrid seed distribution standards. However, predictive fertilizer reserves fall to 11.4% in late Q4 2026, breaching the mandatory 15% regional strategic export reserve required for SADC/AfCFTA phytosanitary export certification.",
-      complianceScore: 91,
-      auditReadinessTier: "Tier-1 Conditional (Buffer Remediation Required)",
-      regionalExportThresholdMet: false,
-      currentBufferMarginPct: 11.4,
-      mandatoryBufferThresholdPct: 15.0,
-      evaluatedPillars: [
-        {
-          pillar: "Codex Alimentarius & Chemical Safety (MRL)",
-          status: "Compliant",
-          score: 96,
-          details:
-            "Fertilizer batches (NPK, Urea, DAP) maintain heavy-metal test certificates (<0.008% Cadmium/Lead). Storage warehouses maintain physical 30m isolation barriers from grain silos to avoid cross-contamination.",
-        },
-        {
-          pillar: "FAO CFS-RAI Principle 6: Sustainable Nutrient Balance",
-          status: "Warning",
-          score: 82,
-          details:
-            "High smallholder demand for Nitrogen (Urea 46-0-0) risks unbalanced soil application if basal phosphate (DAP / NPK) stockouts force delayed foundation dressing.",
-        },
-        {
-          pillar: "Regional Strategic Buffer Reserve (AfCFTA / SADC)",
-          status: "Critical",
-          score: 64,
-          details:
-            "Predictive stock levels for Urea drop below the 15% export compliance buffer by mid-October 2026, creating severe risk of regional cross-border outgrower disqualification.",
-        },
-        {
-          pillar: "Certified Hybrid Seed Purity & Germination (ISTA)",
-          status: "Compliant",
-          score: 97,
-          details:
-            "Certified hybrid maize (SC719, PAN 53) and drought-tolerant sorghum lots demonstrate 98.4% genetic purity and 94% germination rate under SADC seed harmonized regulations.",
-        },
-        {
-          pillar: "Post-Harvest Moisture & Hermetic Integrity",
-          status: "Compliant",
-          score: 90,
-          details:
-            "Receiving aggregation silos maintain continuous telemetry; moisture levels are certified at 12.2% (under the 12.5% maximum SAFEX threshold) with zero aflatoxin proliferation.",
-        },
-      ],
-      criticalVulnerabilities: [
-        {
-          item: "Urea 46-0-0 Granular High-Nitrogen",
-          issue: "Depletion curve models 7-day reserve horizon before seasonal top-dressing peak, pushing regional buffer to 11.4% (vs 15.0% mandatory floor).",
-          remedy: "Expedite delivery of 240 MT from Port of Lobito transit hub via priority rail freight (PO-OCP-9921) to restore buffer to 22.8%.",
-        },
-        {
-          item: "NPK 10-20-10 Basal Compound",
-          issue: "Basal application window starts in 14 days across 682 contracted smallholders, requiring coordinated depot dispatches.",
-          remedy: "Pre-stage 180 MT at regional cooperative distribution depots to prevent bottleneck delays.",
-        },
-      ],
-      actionableDirectives: [
-        "Trigger emergency replenishment PO to secure 120 MT Urea prior to peak vegetative demand curve.",
-        "Authorize AfCFTA Phytosanitary e-Passports for certified outgrowers to protect R440,000 in forward escrow contracts.",
-        "Synchronize weekly warehouse telemetry with the Regional Food Balance Sheet platform.",
-      ],
-      generatedAt: new Date().toISOString(),
-    },
-    source: "agriintel-food-security-engine",
-  });
+  return res.status(503).json({ error: { code: "AI_UNAVAILABLE", message: "The compliance service is unavailable. No generated report has been substituted.", requestId: res.locals.requestId } } satisfies ApiErrorBody);
 });
 
 app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

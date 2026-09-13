@@ -40,7 +40,6 @@ export const Header: React.FC<{
     isMenuHidden,
     toggleMenu,
     setCurrentView,
-    triggerEventSimulation,
     isBiometricModalOpen,
     setIsBiometricModalOpen,
     isSensitiveDataLocked,
@@ -48,7 +47,6 @@ export const Header: React.FC<{
   } = useApp();
 
   const [isCountryMenuOpen, setIsCountryMenuOpen] = useState(false);
-  const [isSimulationMenuOpen, setIsSimulationMenuOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-40 bg-[#0B1013]/95 backdrop-blur-md border-b border-[#19262F] shadow-lg px-3 sm:px-4 lg:px-6 py-2.5 selection:bg-emerald-600 selection:text-white w-full">
@@ -164,80 +162,6 @@ export const Header: React.FC<{
 
         {/* Right Action Controls */}
         <div className="flex items-center gap-1.5 sm:gap-2">
-          {/* Real-time Event Trigger Simulator Menu */}
-          <div className="relative">
-            <button
-              onClick={() => setIsSimulationMenuOpen(!isSimulationMenuOpen)}
-              className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl bg-[#07261B] hover:bg-[#0B3828] border border-[#14533C] text-emerald-300 text-xs font-semibold transition-colors cursor-pointer min-h-[44px]"
-              title="Test real-time IoT and market triggers"
-              id="event-simulator-button"
-            >
-              <Zap className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden lg:inline text-white">Simulations</span>
-              <ChevronDown className="w-3 h-3 text-emerald-400" />
-            </button>
-
-            {isSimulationMenuOpen && (
-              <div className="absolute right-0 mt-2 w-72 bg-[#10171B] rounded-2xl shadow-2xl border border-[#1D2A32] p-2 z-50 animate-in fade-in">
-                <div className="px-2.5 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-[#19262F] mb-1">
-                  Telemetry & Market Events
-                </div>
-                <button
-                  onClick={() => {
-                    triggerEventSimulation("soil_drought");
-                    setIsSimulationMenuOpen(false);
-                  }}
-                  className="w-full text-left p-2.5 rounded-xl hover:bg-[#162228] text-xs text-red-300 flex items-start gap-2.5 cursor-pointer transition-colors"
-                >
-                  <span className="w-2 h-2 rounded-full bg-red-400 mt-1.5 shrink-0" />
-                  <div>
-                    <div className="font-semibold text-white">Soil Moisture &lt; 25% Alert</div>
-                    <div className="text-[11px] text-red-400">Triggers immediate irrigation alert on Field 03</div>
-                  </div>
-                </button>
-                <button
-                  onClick={() => {
-                    triggerEventSimulation("rain_incoming");
-                    setIsSimulationMenuOpen(false);
-                  }}
-                  className="w-full text-left p-2.5 rounded-xl hover:bg-[#162228] text-xs text-amber-300 flex items-start gap-2.5 cursor-pointer transition-colors"
-                >
-                  <span className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0" />
-                  <div>
-                    <div className="font-semibold text-white">Weather Radar: 45mm Rain in 18h</div>
-                    <div className="text-[11px] text-amber-400">Triggers delay in fertilizer broadcast</div>
-                  </div>
-                </button>
-                <button
-                  onClick={() => {
-                    triggerEventSimulation("buyer_surge");
-                    setIsSimulationMenuOpen(false);
-                  }}
-                  className="w-full text-left p-2.5 rounded-xl hover:bg-[#162228] text-xs text-emerald-300 flex items-start gap-2.5 cursor-pointer transition-colors"
-                >
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
-                  <div>
-                    <div className="font-semibold text-white">2,500 MT Grain Tender Match</div>
-                    <div className="text-[11px] text-emerald-400">Instant off-take contract matching</div>
-                  </div>
-                </button>
-                <button
-                  onClick={() => {
-                    triggerEventSimulation("price_rally");
-                    setIsSimulationMenuOpen(false);
-                  }}
-                  className="w-full text-left p-2.5 rounded-xl hover:bg-[#162228] text-xs text-blue-300 flex items-start gap-2.5 cursor-pointer transition-colors"
-                >
-                  <span className="w-2 h-2 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                  <div>
-                    <div className="font-semibold text-white">Regional Price Surge (+7.4%)</div>
-                    <div className="text-[11px] text-blue-400">Advises farmer to forward-lock price</div>
-                  </div>
-                </button>
-              </div>
-            )}
-          </div>
-
           {/* Voice-First Button */}
           <button
             onClick={() => setIsVoiceModalOpen(true)}

@@ -25,37 +25,17 @@ export const GovernmentView: React.FC = () => {
   const [subsidyPct, setSubsidyPct] = useState("20");
   const [policyType, setPolicyType] = useState("Fertilizer Subsidy");
   const [simulating, setSimulating] = useState(false);
-  const [simulationResult, setSimulationResult] = useState<any>({
-    projectedYieldIncreasePct: 14,
-    fiscalCostUSD: "$42 Million USD",
-    forexSavingsUSD: "$68 Million USD",
-    netEconomicBenefitUSD: "+$26 Million USD Net Surplus",
-    keyRecommendations: [
-      "Target smallholders under 5 hectares via digital e-vouchers on CULTx Mobile to prevent leakage",
-      "Combine fertilizer distribution with certified hybrid drought-tolerant seed",
-      "Monitor soil acidity (pH) to prevent soil acidification from excess ammonium nitrate",
-    ],
-  });
+  const [simulationResult, setSimulationResult] = useState<any>(null);
 
   const handleSimulate = async (e: React.FormEvent) => {
     e.preventDefault();
     setSimulating(true);
 
     try {
-
+      const data = await postJson<{ simulation?: any }>("/api/gemini/policy-simulate", { country: selectedCountry.name, policyChange: `${policyType}: ${subsidyPct}%`, baseline: {} });
+      setSimulationResult(data.simulation || null);
     } catch (err) {
-      // Keep baseline response
-      setSimulationResult({
-        projectedYieldIncreasePct: 14,
-        fiscalCostUSD: "$42 Million USD",
-        forexSavingsUSD: "$68 Million USD",
-        netEconomicBenefitUSD: "+$26 Million USD Net Surplus",
-        keyRecommendations: [
-          "Target smallholders under 5 hectares via digital e-vouchers on CULTx Mobile to prevent leakage",
-          "Combine fertilizer distribution with certified hybrid drought-tolerant seed",
-          "Monitor soil acidity (pH) to prevent soil acidification from excess ammonium nitrate",
-        ],
-      });
+      setSimulationResult(null);
     } finally {
       setSimulating(false);
     }

@@ -24,12 +24,6 @@ export const VoiceModal: React.FC = () => {
     { code: "pt", name: "Portuguese", native: "Português", voiceTag: "pt-MZ" },
   ];
 
-  const samplePrompts = [
-    "What should I do with my maize today?",
-    "Will it rain in the next 72 hours?",
-    "Why are the leaves in Field 04 turning yellow?",
-    "Find buyers for 250 tonnes of yellow maize.",
-  ];
 
   // Stop any speech synthesis on unmount or close
   useEffect(() => {
@@ -81,9 +75,7 @@ export const VoiceModal: React.FC = () => {
         speakText(data.answer);
       }
     } catch (err) {
-      const fallbackMsg = `Good morning James. In ${currentFarm.name}, you have 42 hectares of ${currentFarm.primaryCrop}. Soil moisture in Field 03 is 28%, so irrigate 20 millimeters within 8 hours. Delay chemical spraying because 34 millimeters of rain is arriving in 72 hours.`;
-      setAiVoiceResponse(fallbackMsg);
-      speakText(fallbackMsg);
+      setAiVoiceResponse("The advisory service is unavailable. No generated advice has been substituted.");
     } finally {
       setIsLoading(false);
     }
@@ -118,8 +110,7 @@ export const VoiceModal: React.FC = () => {
 
         recognition.onerror = () => {
           setIsListening(false);
-          // Fallback to demo prompt if mic denied
-          handleSendVoiceQuery("What should I do with my maize today?");
+          setTranscript("Microphone access was not available. Type your question below instead.");
         };
 
         recognition.onend = () => {
@@ -133,12 +124,7 @@ export const VoiceModal: React.FC = () => {
       }
     }
 
-    // Direct fallback simulation for field demo
-    setIsListening(true);
-    setTranscript("Simulating voice audio capture...");
-    setTimeout(() => {
-      handleSendVoiceQuery("What should I do with my maize today?");
-    }, 1500);
+    setTranscript("Voice input is not supported by this browser. Type your question below instead.");
   };
 
   const stopSpeaking = () => {
@@ -280,23 +266,11 @@ export const VoiceModal: React.FC = () => {
             </div>
           )}
 
-          {/* Quick Voice Prompt Shortcuts */}
           <div className="w-full text-left pt-2 border-t border-[#19262F]">
             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-              Or tap a field question to ask:
+              Or type a question:
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {samplePrompts.map((prompt, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleSendVoiceQuery(prompt)}
-                  className="text-left text-xs p-2 rounded-lg bg-[#162228] hover:bg-[#1D2A32] text-slate-300 hover:text-white transition-colors cursor-pointer border border-[#1D2A32] flex items-center justify-between min-h-[36px]"
-                >
-                  <span className="truncate">{prompt}</span>
-                  <Mic className="w-3 h-3 text-emerald-300 shrink-0 ml-1.5" />
-                </button>
-              ))}
-            </div>
+            <div className="flex gap-2"><input value={transcript} onChange={(event) => setTranscript(event.target.value)} placeholder="Ask about your operation" className="min-w-0 flex-1 rounded-lg border border-[#1D2A32] bg-[#162228] px-3 py-2 text-xs text-white" /><button onClick={() => handleSendVoiceQuery(transcript)} disabled={!transcript.trim() || isLoading} className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold disabled:opacity-50">Ask</button></div>
           </div>
         </div>
       </div>
