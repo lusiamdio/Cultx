@@ -32,6 +32,7 @@ import {
   INITIAL_SOIL_NODES,
   INITIAL_SOIL_ALERTS,
 } from "../data/mockData";
+import { supabase } from "../lib/supabase";
 
 const VIEW_ALIASES: Record<string, string> = {
   landing: "landing", dashboard: "dashboard", home: "home", farms: "farms", farmer: "farmer", farmers: "farmers",
@@ -204,6 +205,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialRole?: Us
   }, [syncQueue]);
 
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+
+  useEffect(() => {
+    const userId = supabase.getSession()?.user.id;
+    if (!userId) return;
+    return supabase.subscribeToNotifications(userId, (record) => {
+      const notification = record as { id: string; type: NotificationItem["type"]; title: string; message: string; action_label?: string; target_view?: string; read: boolean; created_at: string };
+      setNotifications((previous) => [{ id: notification.id, type: notification.type, title: notification.title, message: notification.message, actionLabel: notification.action_label, targetView: notification.target_view, read: notification.read, timestamp: new Date(notification.created_at).toLocaleTimeString() }, ...previous]);
+    });
+  }, []);
 
   // Modals
   const [isCropDoctorOpen, setIsCropDoctorOpenState] = useState<boolean>(false);

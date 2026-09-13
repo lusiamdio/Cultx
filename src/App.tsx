@@ -35,6 +35,7 @@ import { FloatingAICopilot } from "./components/copilot/FloatingAICopilot";
 import { WebsiteFooter } from "./components/common/WebsiteFooter";
 import { BiometricAuthModal } from "./components/common/BiometricAuthModal";
 import { canAccessView } from "./auth/access";
+import { supabase, type SupabaseUser } from "./lib/supabase";
 
 const AppContent: React.FC = () => {
   const {
@@ -55,7 +56,7 @@ const AppContent: React.FC = () => {
   };
 
   const renderActiveView = () => {
-
+    if (!canAccessView(userRole, currentView) || (allowedViews[currentView] && !allowedViews[currentView].includes(userRole))) {
       return <section className="rounded-2xl border border-[#1D2A32] bg-[#10171B] p-8 text-center"><h1 className="text-xl font-bold">Unauthorized</h1><p className="mt-2 text-slate-400">Your authenticated role is not allowed to open this workspace.</p></section>;
     }
     switch (currentView) {
@@ -181,24 +182,60 @@ const AppContent: React.FC = () => {
   );
 };
 
-type SessionUser = { email: string; roles: string[] };
-const roleToUiRole: Record<string, import("./types").UserRole> = {
-  farmer: "farmer", cooperative_admin: "cooperative", buyer: "buyer", government_officer: "government", platform_admin: "superadmin",
-};
+const SignIn: React.FC<{ onAuthenticated: (user: SupabaseUser) => void }> = ({ onAuthenticated }) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-const SignIn: React.FC<{ onAuthenticated: (user: SessionUser) => void }> = ({ onAuthenticated }) => {
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSubmitting(true); setMessage("");
+    try {
+      if (isRegistering) {
+        const user = await supabase.signUp(email, password);
+        if (user) onAuthenticated(user);
+        else setMessage("Check your email to confirm your CULTx account, then sign in.");
+      } else {
+        const session = await supabase.signInWithPassword(email, password);
+        onAuthenticated(session.user);
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Authentication could not be completed.");
+    } finally { setSubmitting(false); }
+  };
 
+  return <main className="min-h-screen bg-[#090D0F] text-slate-100 grid place-items-center p-5">
+    <form onSubmit={submit} className="w-full max-w-md rounded-2xl border border-[#1D2A32] bg-[#10171B] p-8 shadow-2xl">
+      <img src="/cultx_logo.png" alt="CULTx" className="h-10 w-auto mb-7" />
+      <h1 className="text-2xl font-bold">{isRegistering ? "Create your CULTx account" : "Welcome back"}</h1>
+      <p className="mt-2 text-sm text-slate-400">Secure authentication is provided by Supabase.</p>
+      <label className="mt-6 block text-sm font-medium">Email<input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-2 w-full rounded-lg border border-slate-700 bg-[#090D0F] px-3 py-2.5 outline-none focus:border-emerald-500" /></label>
+      <label className="mt-4 block text-sm font-medium">Password<input required minLength={6} type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="mt-2 w-full rounded-lg border border-slate-700 bg-[#090D0F] px-3 py-2.5 outline-none focus:border-emerald-500" /></label>
+      {message && <p role="alert" className="mt-4 text-sm text-amber-300">{message}</p>}
+      <button disabled={submitting} className="mt-6 w-full rounded-lg bg-emerald-600 px-4 py-3 font-semibold hover:bg-emerald-500 disabled:opacity-60">{submitting ? "Please wait…" : isRegistering ? "Create account" : "Sign in"}</button>
+      <button type="button" onClick={() => { setIsRegistering((value) => !value); setMessage(""); }} className="mt-4 w-full text-sm text-emerald-400 hover:text-emerald-300">{isRegistering ? "Already have an account? Sign in" : "New to CULTx? Create an account"}</button>
+    </form>
+  </main>;
 };
 
 export default function App() {
-  const [user, setUser] = useState<SessionUser | null>(null); const [checked, setChecked] = useState(false);
-  useEffect(() => { fetch("/api/auth/me", { credentials: "same-origin" }).then((response) => response.ok ? response.json() : null).then((data) => setUser(data?.user || null)).finally(() => setChecked(true)); }, []);
+  const [user, setUser] = useState<SupabaseUser | null>(null); const [role, setRole] = useState<import("./types").UserRole>("farmer"); const [checked, setChecked] = useState(false);
+  useEffect(() => {
+    supabase.getUser().then(async (authenticatedUser) => {
+      setUser(authenticatedUser);
+      if (authenticatedUser) {
+        const profile = await supabase.getProfile(authenticatedUser.id);
+        if (profile?.role) setRole(profile.role as import("./types").UserRole);
+      }
+    }).finally(() => setChecked(true));
+  }, []);
 
   if (!checked) return <main className="min-h-screen bg-[#090D0F] text-slate-300 grid place-items-center">Checking secure session…</main>;
   if (!user) return <SignIn onAuthenticated={setUser} />;
-  const initialRole = roleToUiRole[user.roles[0]] || "farmer";
   return (
-    <AppProvider initialRole={initialRole}>
+    <AppProvider initialRole={role}>
       <AppContent />
     </AppProvider>
   );
