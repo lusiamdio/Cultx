@@ -18,23 +18,12 @@ create table if not exists public.notifications (
   created_at timestamptz not null default now()
 );
 
--- A user-owned workspace is the launch-safe source of truth for operational data.
--- New accounts begin empty; the application never seeds example farms, listings, or telemetry.
-create table if not exists public.workspaces (
-  user_id uuid primary key references auth.users(id) on delete cascade,
-  data jsonb not null default '{}'::jsonb,
-  updated_at timestamptz not null default now()
-);
-
-alter table public.profiles enable row level security;
-alter table public.notifications enable row level security;
-alter table public.workspaces enable row level security;
 
 create policy "Users can read their own profile" on public.profiles for select to authenticated using ((select auth.uid()) = id);
 create policy "Users can update their own profile" on public.profiles for update to authenticated using ((select auth.uid()) = id) with check ((select auth.uid()) = id);
 create policy "Users can read their notifications" on public.notifications for select to authenticated using ((select auth.uid()) = user_id);
 create policy "Users can mark their notifications read" on public.notifications for update to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
-create policy "Users can manage their workspace" on public.workspaces for all to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+
 
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$

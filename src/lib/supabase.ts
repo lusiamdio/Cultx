@@ -76,24 +76,7 @@ export const supabase = {
     const rows = await response.json() as Array<{ role: string }>;
     return rows[0] || null;
   },
-  async getWorkspace() {
-    const token = readSession()?.access_token;
-    if (!token) return null;
-    const response = await fetch(`${supabaseUrl}/rest/v1/workspaces?select=data&limit=1`, { headers: { apikey: supabaseKey, Authorization: `Bearer ${token}` } });
-    if (!response.ok) return null;
-    const rows = await response.json() as Array<{ data: Record<string, unknown> }>;
-    return rows[0]?.data || null;
-  },
-  async saveWorkspace(data: Record<string, unknown>) {
-    const token = readSession()?.access_token;
-    if (!token) return;
-    const response = await fetch(`${supabaseUrl}/rest/v1/workspaces?on_conflict=user_id`, {
-      method: "POST",
-      headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" },
-      body: JSON.stringify({ user_id: readSession()!.user.id, data, updated_at: new Date().toISOString() }),
-    });
-    if (!response.ok) throw new Error("Could not save your workspace.");
-  },
+
   subscribeToNotifications(userId: string, onInsert: (record: unknown) => void) {
     const token = readSession()?.access_token;
     if (!token) return () => undefined;

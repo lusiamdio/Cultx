@@ -18,9 +18,7 @@ import {
   SensorTelemetryAlert,
 } from "../types";
 import { AFRICAN_COUNTRIES } from "../data/countries";
-import { supabase } from "../lib/supabase";
 
-const EMPTY_FARM: Farm = { id: "", name: "", ownerName: "", country: "", region: "", totalHectares: 0, primaryCrop: "", overallHealthScore: 0, soilHealth: 0, cropHealth: 0, waterIndex: 0, weatherRisk: 0, pestRisk: 0, expectedYieldTonnesPerHa: 0, fields: [], sensorsOnline: 0, lastSatellitePass: "No satellite data", verifiedStatus: "unverified", trustScore: 0 };
 
 const VIEW_ALIASES: Record<string, string> = {
   landing: "landing", dashboard: "dashboard", home: "home", farms: "farms", farmer: "farmer", farmers: "farmers",
@@ -220,6 +218,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialRole?: Us
     }, 500);
     return () => window.clearTimeout(save);
   }, [workspaceReady, farms, recommendations, commodityPrices, marketListings, purchaseContracts, farmerDocuments, soilSensorNodes, soilAlerts, notifications]);
+
+  useEffect(() => {
+    const userId = supabase.getSession()?.user.id;
+    if (!userId) return;
+    return supabase.subscribeToNotifications(userId, (record) => {
+      const notification = record as { id: string; type: NotificationItem["type"]; title: string; message: string; action_label?: string; target_view?: string; read: boolean; created_at: string };
+      setNotifications((previous) => [{ id: notification.id, type: notification.type, title: notification.title, message: notification.message, actionLabel: notification.action_label, targetView: notification.target_view, read: notification.read, timestamp: new Date(notification.created_at).toLocaleTimeString() }, ...previous]);
+    });
+  }, []);
 
   useEffect(() => {
     const userId = supabase.getSession()?.user.id;
