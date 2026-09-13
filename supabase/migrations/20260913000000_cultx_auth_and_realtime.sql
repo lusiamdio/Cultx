@@ -19,6 +19,7 @@ create table if not exists public.notifications (
 );
 
 
+
 create policy "Users can read their own profile" on public.profiles for select to authenticated using ((select auth.uid()) = id);
 create policy "Users can update their own profile" on public.profiles for update to authenticated using ((select auth.uid()) = id) with check ((select auth.uid()) = id);
 create policy "Users can read their notifications" on public.notifications for select to authenticated using ((select auth.uid()) = user_id);
