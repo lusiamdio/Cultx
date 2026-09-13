@@ -76,7 +76,7 @@ export const AIComplianceReportModal: React.FC<AIComplianceReportModalProps> = (
         setReport(data.report);
       }
     } catch (e) {
-      console.warn("Failed to generate AI report via backend, using local model fallback:", e);
+      console.warn("Failed to generate AI report via backend:", e);
     } finally {
       setLoading(false);
     }

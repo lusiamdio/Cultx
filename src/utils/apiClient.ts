@@ -22,9 +22,11 @@ export async function postJson<TResponse>(
   const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
 
   try {
+    const { supabase } = await import("../lib/supabase");
+    const token = supabase.getAccessToken();
     const response = await fetch(path, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       credentials: "same-origin",
       body: JSON.stringify(body),
       signal: controller.signal,
